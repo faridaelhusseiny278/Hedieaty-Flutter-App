@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'rounded_button.dart';
 import 'gift_item.dart';
+import 'gift_details_page.dart';
 
 class GiftListPage extends StatefulWidget {
   @override
@@ -15,10 +16,10 @@ class _GiftListPageState extends State<GiftListPage> {
   String selectedCategory = "Electronics"; // Default value
 
   List<Map<String, dynamic>> gifts = [
-    {'name': 'Teddy Bear', 'category': 'Toys', 'status': 'Available', 'pledged': false},
-    {'name': 'Perfume Set', 'category': 'Beauty', 'status': 'Available', 'pledged': false},
-    {'name': 'Smartwatch', 'category': 'Electronics', 'status': 'Pledged', 'pledged': true},
-    {'name': 'Book', 'category': 'Books', 'status': 'Available', 'pledged': false},
+    {'name': 'Teddy Bear', 'category': 'Toys', 'pledged': false},
+    {'name': 'Perfume Set', 'category': 'Beauty', 'pledged': false},
+    {'name': 'Smartwatch', 'category': 'Electronics',  'pledged': true},
+    {'name': 'Book', 'category': 'Books', 'pledged': false},
   ];
 
   // Sort gifts by selected criteria
@@ -29,7 +30,7 @@ class _GiftListPageState extends State<GiftListPage> {
       } else if (criteria == 'category') {
         gifts.sort((a, b) => a['category'].compareTo(b['category']));
       } else if (criteria == 'status') {
-        gifts.sort((a, b) => a['status'].compareTo(b['status']));
+        gifts.sort((a, b) => a['pledged'].compareTo(b['pledged']));
       }
     });
   }
@@ -45,7 +46,6 @@ class _GiftListPageState extends State<GiftListPage> {
           padding: EdgeInsets.all(16.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            // crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 'Sort by',
@@ -319,7 +319,6 @@ class _GiftListPageState extends State<GiftListPage> {
                                             gifts.add({
                                               'name': giftNameController.text,
                                               'category': selectedCategory,
-                                              'status': "Available", // Default status
                                               'pledged': false, // Default value
                                             });
                                           });
@@ -372,8 +371,24 @@ class _GiftListPageState extends State<GiftListPage> {
                       return GiftItem(
                         giftName: gift['name'],
                         category: gift['category'],
-                        status: gift['status'],
                         pledged: gift['pledged'],
+                        onPressed: () async {
+                          final updatedGift = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => GiftDetailsPage(
+                                giftDetails: gifts[index], // Pass the selected gift details
+                              ),
+                            ),
+                          );
+                          print("updated gift is $updatedGift");
+                          if (updatedGift != null) {
+                            setState(() {
+                              // Update the gift in the list with the modified data
+                              gifts[index] = updatedGift;
+                            });
+                          }
+                        },
                         onLongPress: () {
                           showDialog(
                             context: context,
