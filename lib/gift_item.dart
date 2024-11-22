@@ -3,15 +3,17 @@ import 'package:flutter/material.dart';
 class GiftItem extends StatelessWidget {
   final String giftName;
   final String category;
-  final String status;
   final bool pledged;
+  String imageurl; // Image URL for the avatar
+  final VoidCallback onPressed;
   final VoidCallback onLongPress;
 
   GiftItem({
     required this.giftName,
     required this.category,
-    required this.status,
     required this.pledged,
+    this.imageurl = '', // Default value if no image URL is provided
+    required this.onPressed,
     required this.onLongPress,
   });
 
@@ -19,20 +21,15 @@ class GiftItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onLongPress: onLongPress,
+      onTap: onPressed,
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 10),
         padding: EdgeInsets.all(2), // Space for gradient border
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              // Colors.red,
-              // Colors.orange,
-              // Colors.yellow,
-              // Colors.green,
-              // Colors.blue,
               Colors.grey,
               Colors.purple,
-              // Colors.deepPurple
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -46,11 +43,18 @@ class GiftItem extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
           child: ListTile(
+
+            leading: imageurl.isNotEmpty
+                ? CircleAvatar(
+              backgroundImage: NetworkImage(imageurl), // NetworkImage for the circular avatar
+              radius: 25, // Size of the avatar
+            )
+                : null, // No image, no avatar
             title: Text(
               giftName,
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
-            subtitle: Text('$category - $status'),
+            subtitle: Text('$category'),
           ),
         ),
       ),
