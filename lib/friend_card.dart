@@ -14,18 +14,7 @@ class FriendCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Color(0xFFE0E5EC),
         borderRadius: BorderRadius.circular(16.0),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            offset: Offset(-6, -6),
-            blurRadius: 10,
-          ),
-          BoxShadow(
-            color: Colors.grey.shade600,
-            offset: Offset(6, 6),
-            blurRadius: 10,
-          ),
-        ],
+
       ),
       child: ListTile(
         leading: CircleAvatar(
