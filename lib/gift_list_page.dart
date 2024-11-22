@@ -16,10 +16,10 @@ class _GiftListPageState extends State<GiftListPage> {
   String selectedCategory = "Electronics"; // Default value
 
   List<Map<String, dynamic>> gifts = [
-    {'name': 'Teddy Bear', 'category': 'Toys', 'pledged': false},
-    {'name': 'Perfume Set', 'category': 'Beauty', 'pledged': false},
-    {'name': 'Smartwatch', 'category': 'Electronics',  'pledged': true},
-    {'name': 'Book', 'category': 'Books', 'pledged': false},
+    {'name': 'Teddy Bear', 'category': 'Toys', 'pledged': false,'imageurl':'https://th.bing.com/th/id/OIP.1gzFgCamhP5TDxg44AYKwwAAAA?rs=1&pid=ImgDetMain' },
+    {'name': 'Perfume Set', 'category': 'Toys', 'pledged': false,'imageurl':''},
+    {'name': 'Smartwatch', 'category': 'Electronics',  'pledged': true,'imageurl':''},
+    {'name': 'Book', 'category': 'Books', 'pledged': false,'imageurl':''},
   ];
 
   // Sort gifts by selected criteria
@@ -30,7 +30,8 @@ class _GiftListPageState extends State<GiftListPage> {
       } else if (criteria == 'category') {
         gifts.sort((a, b) => a['category'].compareTo(b['category']));
       } else if (criteria == 'status') {
-        gifts.sort((a, b) => a['pledged'].compareTo(b['pledged']));
+        gifts.sort((a, b) => b['pledged'] == true ? 1 : 0 - (a['pledged'] == true ? 1 : 0));
+
       }
     });
   }
@@ -191,163 +192,30 @@ class _GiftListPageState extends State<GiftListPage> {
                     ),
                     // "+" Icon Button
                     ElevatedButton(
-                      onPressed: () {
-                        // Show a bottom sheet for adding gift details
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true, // Allows the bottom sheet to expand with the keyboard
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(20.0)),
+                      onPressed: () async {
+                        // Navigate to GiftDetailsPage and wait for the updated gift to be returned
+                        var updatedGift = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GiftDetailsPage(
+                              giftDetails: {
+                                'name': '',
+                                'category': selectedCategory, // Default category
+                                'description': '',
+                                'pledged': false, // Default pledge status
+                                'imageurl': ''
+                              },
+                            ),
                           ),
-                          builder: (BuildContext context) {
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                top: 16,
-                                left: 16,
-                                right: 16,
-                                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                              ),
-                              child: SingleChildScrollView(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Gift Name Input
-                                    Material(
-                                      elevation: 2, // Adds shadow for elevation
-                                      shadowColor: Colors.grey.withOpacity(0.3), // Light shadow
-                                      borderRadius: BorderRadius.circular(10), // Rounded corners for the material
-                                      child: TextField(
-                                        controller: giftNameController,
-                                        decoration: InputDecoration(
-                                          labelText: "Gift Name",
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(10), // Match Material's rounded corners
-                                          ),
-                                          filled: true, // Adds a background to the text field
-                                          fillColor: Colors.white, // Background color
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 16),
-
-// Description Input
-                                    Material(
-                                      elevation: 2,
-                                      shadowColor: Colors.grey.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: TextField(
-                                        maxLines: 3,
-                                        controller: descriptionController,
-                                        decoration: InputDecoration(
-                                          labelText: "Description",
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          filled: true,
-                                          fillColor: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 16),
-
-// Category Input
-                                    Material(
-                                      elevation: 2,
-                                      shadowColor: Colors.grey.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: DropdownButtonFormField<String>(
-                                        value: selectedCategory, // Use the selected category
-                                        items: ["Electronics", "Books", "Toys", "Clothing"]
-                                            .map((category) => DropdownMenuItem(
-                                          value: category,
-                                          child: Text(category),
-                                        ))
-                                            .toList(),
-                                        onChanged: (value) {
-                                          setState(() {
-                                            selectedCategory = value!; // Update selected category
-                                          });
-                                        },
-                                        decoration: InputDecoration(
-                                          labelText: "Category",
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          filled: true,
-                                          fillColor: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 16),
-
-                                    Material(
-                                      elevation: 2,
-                                      shadowColor: Colors.grey.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: TextField(
-                                        keyboardType: TextInputType.number,
-                                        decoration: InputDecoration(
-                                          labelText: "Price",
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(10),
-                                          ),
-                                          filled: true,
-                                          fillColor: Colors.white,
-                                          prefixText: "\$",
-                                        ),
-                                      ),
-                                    ),
-
-                                    SizedBox(height: 16),
-                                    // Upload Image Button
-                                    ElevatedButton.icon(
-                                      onPressed: () {
-                                        // Handle image upload
-                                      },
-                                      icon: Icon(Icons.image),
-                                      label: Text("Upload Image"),
-                                    ),
-                                    SizedBox(height: 16),
-
-                                    SizedBox(height: 16),
-                                    // Save Button
-                                    Center(
-                                      child: ElevatedButton(
-                                        onPressed: () {
-                                          setState(() {
-                                            gifts.add({
-                                              'name': giftNameController.text,
-                                              'category': selectedCategory,
-                                              'pledged': false, // Default value
-                                            });
-                                          });
-
-                                          // Clear the controllers after adding
-                                          giftNameController.clear();
-                                          descriptionController.clear();
-
-                                          Navigator.pop(context); // Close the bottom sheet
-                                        },
-
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.purple, // Set button color to purple
-                                          foregroundColor: Colors.white, // Set text color to white for contrast
-                                          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12), // Add some padding for better appearance
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(30),
-                                          ),
-                                        ),
-                                        child: Text("Save"),
-                                      ),
-                                    )
-
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
                         );
+
+                        // Check if the updated gift is not null
+                        if (updatedGift != null) {
+                          // Add the new or updated gift to the list
+                          setState(() {
+                            gifts.add(updatedGift);
+                          });
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         shape: CircleBorder(), // Circular button
@@ -372,6 +240,7 @@ class _GiftListPageState extends State<GiftListPage> {
                         giftName: gift['name'],
                         category: gift['category'],
                         pledged: gift['pledged'],
+                        imageurl: gift['imageurl'],
                         onPressed: () async {
                           final updatedGift = await Navigator.push(
                             context,
@@ -381,7 +250,6 @@ class _GiftListPageState extends State<GiftListPage> {
                               ),
                             ),
                           );
-                          print("updated gift is $updatedGift");
                           if (updatedGift != null) {
                             setState(() {
                               // Update the gift in the list with the modified data
