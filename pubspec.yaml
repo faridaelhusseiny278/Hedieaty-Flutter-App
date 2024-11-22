@@ -63,7 +63,7 @@ flutter:
   uses-material-design: true
 
   
-   assets:
+  assets:
      - assets\istockphoto-1296058958-612x612.jpg
      - assets\istockphoto-1371904269-612x612.jpg
      - assets\istockphoto-1417086080-612x612.jpg
