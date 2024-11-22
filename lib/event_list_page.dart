@@ -1,0 +1,437 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class CalendarPage extends StatefulWidget {
+  @override
+  _CalendarPageState createState() => _CalendarPageState();
+}
+
+class _CalendarPageState extends State<CalendarPage> {
+  DateTime selectedDate = DateTime.now();
+  DateTime firstDayOfMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
+  DateTime lastDayOfMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 0);
+  bool showCalendar = true;
+  bool selectAll = false;
+  final ScrollController _scrollController = ScrollController();
+
+  List<Event> selectedEvents = [];
+  List<Event> events = [
+    Event(
+        name: 'Birthday Gift Planning',
+        category: 'Occasion',
+        status: 'Upcoming',
+        location: 'Home Office',
+        date: DateTime(2024, 10, 30, 10, 0)),
+    Event(
+        name: 'Wedding Registry Setup',
+        category: 'Milestone',
+        status: 'Current',
+        location: '7392 W Belt Line Rd Round Rock',
+        date: DateTime(2024, 10, 30, 13, 30)),
+    Event(
+        name: 'Graduation Celebration Prep',
+        category: 'Celebration',
+        status: 'Upcoming',
+        location: '9118 Elm St Chandler',
+        date: DateTime(2024, 10, 31, 15, 30)),
+    Event(
+        name: 'Holiday Gift Shopping',
+        category: 'Seasonal',
+        status: 'Upcoming',
+        location: 'Mall Center',
+        date: DateTime(2024, 11, 1, 12, 0)),
+  ];
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      // Check if the user has scrolled enough to change the month
+      double offset = _scrollController.offset;
+      int index = (offset / 80).round(); // Estimate index based on the scroll offset
+      DateTime newSelectedDate = firstDayOfMonth.add(Duration(days: index));
+
+      // If month has changed, update selectedDate and the first/last day of the new month
+      if (newSelectedDate.month != selectedDate.month) {
+        setState(() {
+          selectedDate = newSelectedDate;
+          firstDayOfMonth = DateTime(newSelectedDate.year, newSelectedDate.month, 1);
+          lastDayOfMonth = DateTime(newSelectedDate.year, newSelectedDate.month + 1, 0);
+        });
+      }
+    });
+  }
+
+  void _toggleSelectAll(bool value) {
+    setState(() {
+      selectAll = value;
+      selectedEvents = value ? List.from(events) : [];
+    });
+  }
+
+  void _toggleEventSelection(Event event) {
+    setState(() {
+      if (selectedEvents.contains(event)) {
+        selectedEvents.remove(event);
+      } else {
+        selectedEvents.add(event);
+      }
+    });
+  }
+
+  void _sortEvents(String criteria) {
+    setState(() {
+      if (criteria == 'Name') {
+        events.sort((a, b) => a.name.compareTo(b.name));
+      } else if (criteria == 'Category') {
+        events.sort((a, b) => a.category.compareTo(b.category));
+      } else if (criteria == 'Status') {
+        events.sort((a, b) => a.status.compareTo(b.status));
+      }
+    });
+  }
+
+  void _addOrEditEvent({Event? event}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => EventForm(
+        event: event,
+        onSave: (newEvent) {
+          setState(() {
+            if (event == null) {
+              events.add(newEvent);
+            } else {
+              int index = events.indexOf(event);
+              events[index] = newEvent;
+            }
+          });
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
+  void _deleteSelectedEvents() {
+    setState(() {
+      events.removeWhere((event) => selectedEvents.contains(event));
+      selectedEvents.clear();
+      selectAll = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    DateTime today = DateTime.now();
+    List<DateTime> dates = [];
+    for (int i = 0; i <= lastDayOfMonth.day - firstDayOfMonth.day; i++) {
+      dates.add(firstDayOfMonth.add(Duration(days: i)));
+    }
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.deepPurple,
+        elevation: 0,
+        title: Text(
+          showCalendar? DateFormat('MMMM yyyy').format(selectedDate): "All Events",
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(showCalendar ? Icons.event : Icons.calendar_today, color: Colors.white),
+            onPressed: () => setState(() => showCalendar = !showCalendar),
+          ),
+          IconButton(
+            icon: Icon(Icons.sort, color: Colors.white),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (_) => _buildSortOptions(),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: showCalendar ? _buildCalendarView() : _buildEventsListView(),
+      ),
+      bottomNavigationBar: _buildBottomNavBar(),
+    );
+  }
+
+  Widget _buildCalendarView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildDateRow(),
+        const SizedBox(height: 16),
+        Expanded(child: _buildEventsListView()),
+      ],
+    );
+  }
+
+  Widget _buildEventsListView() {
+    return ListView(
+      children: events.map((event) => _buildEventCard(event)).toList(),
+    );
+  }
+
+  Widget _buildEventCard(Event event) {
+    bool isSelected = selectedEvents.contains(event);
+    return Card(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      color: isSelected ? Colors.deepPurple[100] : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16.0),
+      ),
+      shadowColor: Colors.grey.withOpacity(0.2),
+      elevation: 6,
+      child: ListTile(
+        contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        leading: Checkbox(
+          value: isSelected,
+          onChanged: (_) => _toggleEventSelection(event),
+          activeColor: Colors.deepPurple,
+        ),
+        title: Text(
+          event.name,
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${event.category} • ${event.status}',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            ),
+            Text(
+              '${event.location} • ${event.date.toLocal().hour}:${event.date.minute.toString().padLeft(2, '0')}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+            ),
+          ],
+        ),
+        trailing: IconButton(
+          icon: Icon(Icons.edit, color: Colors.deepPurple),
+          onPressed: () => _addOrEditEvent(event: event),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateRow() {
+    DateTime today = DateTime.now();
+    DateTime firstDayOfMonth = DateTime(today.year, today.month, 1);
+    DateTime lastDayOfMonth = DateTime(today.year, today.month + 1, 0);
+
+    List<DateTime> dates = [];
+    for (int i = 0; i <= lastDayOfMonth.day - firstDayOfMonth.day; i++) {
+      dates.add(firstDayOfMonth.add(Duration(days: i)));
+    }
+
+    DateTime? selectedDate; // Holds the currently selected date
+
+    return StatefulBuilder(builder: (context, setState) {
+      return SizedBox(
+        height: 80, // Fixed height to ensure space for the calendar
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal, // Enable horizontal scrolling
+          physics: const AlwaysScrollableScrollPhysics(), // Allow scrolling
+          itemCount: dates.length,
+          itemBuilder: (context, index) {
+            DateTime date = dates[index];
+            bool isToday = date.day == today.day &&
+                date.month == today.month &&
+                date.year == today.year;
+            bool isSelected = selectedDate != null &&
+                date.day == selectedDate!.day &&
+                date.month == selectedDate!.month &&
+                date.year == selectedDate!.year;
+
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedDate = date;
+                });
+                // You can handle additional logic for the selected date here.
+                print("Selected Date: ${date.toLocal()}");
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Column(
+                  children: [
+                    Text(
+                      ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.weekday % 7],
+                      style: TextStyle(
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    CircleAvatar(
+                      radius: 14,
+                      backgroundColor: isSelected
+                          ? Colors.orange
+                          : isToday
+                          ? Colors.deepPurple
+                          : Colors.transparent,
+                      child: Text(
+                        '${date.day}',
+                        style: TextStyle(
+                          color: isSelected || isToday ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    });
+  }
+
+
+
+
+  Widget _buildSortOptions() {
+    return ListView(
+      shrinkWrap: true,
+      children: ['Name', 'Category', 'Status'].map((criteria) {
+        return ListTile(
+          title: Text(criteria),
+          onTap: () {
+            _sortEvents(criteria);
+            Navigator.pop(context);
+          },
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildBottomNavBar() {
+    return BottomAppBar(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          IconButton(
+            icon: Icon(Icons.add, color: Colors.deepPurple),
+            onPressed: () => _addOrEditEvent(),
+          ),
+          IconButton(
+            icon: Icon(
+              Icons.delete,
+              color: selectedEvents.isNotEmpty ? Colors.deepPurple : Colors.grey,
+            ),
+            onPressed: selectedEvents.isNotEmpty ? _deleteSelectedEvents : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Event {
+  String name;
+  String category;
+  String status;
+  DateTime date;
+  String location; // Add this property
+
+  Event({
+    required this.name,
+    required this.category,
+    required this.status,
+    required this.date,
+    required this.location, // Make location required
+  });
+}
+class EventForm extends StatelessWidget {
+  final Event? event;
+  final Function(Event) onSave;
+
+  EventForm({this.event, required this.onSave});
+
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _categoryController = TextEditingController();
+  final _statusController = TextEditingController();
+  final _locationController = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    if (event != null) {
+      _nameController.text = event!.name;
+      _categoryController.text = event!.category;
+      _statusController.text = event!.status;
+      _locationController.text = event!.location;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _nameController,
+              decoration: InputDecoration(labelText: 'Event Name'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter an event name';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              controller: _categoryController,
+              decoration: InputDecoration(labelText: 'Category'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a category';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              controller: _statusController,
+              decoration: InputDecoration(labelText: 'Status'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a status';
+                }
+                return null;
+              },
+            ),
+            TextFormField(
+              controller: _locationController,
+              decoration: InputDecoration(labelText: 'Location'),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a location';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              child: Text(event == null ? 'Add Event' : 'Save Changes'),
+              onPressed: () {
+                if (_formKey.currentState!.validate()) {
+                  final newEvent = Event(
+                    name: _nameController.text,
+                    category: _categoryController.text,
+                    status: _statusController.text,
+                    date: event?.date ?? DateTime.now(),
+                    location: _locationController.text,
+                  );
+                  onSave(newEvent);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
