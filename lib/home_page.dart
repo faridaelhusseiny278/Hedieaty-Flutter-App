@@ -49,7 +49,8 @@ class HomePage extends StatelessWidget {
               'pledged': true,
               'imageurl': 'https://example.com/fitnesstracker.jpg',
               'price': 50.0,
-              'description': '' // Empty description
+              'description': 'A high-quality fitness tracker that helps monitor my workouts, heart rate, and daily activity.'
+
             },
           ],
         },
@@ -81,13 +82,13 @@ class HomePage extends StatelessWidget {
           'Status': 'Upcoming',
           'gifts': [
             {
-              'giftid': 13,
+              'giftid':13 ,
               'giftName': 'Wine Glass Set',
               'category': 'Home',
               'pledged': false,
               'imageurl': 'https://example.com/wineglassset.jpg',
               'price': 40.0,
-              'description': '' // Empty description
+              'description': ''
             },
           ],
         },
@@ -125,7 +126,8 @@ class HomePage extends StatelessWidget {
               'pledged': false,
               'imageurl': 'https://example.com/partysupplies.jpg',
               'price': 50.0,
-              'description': '' // Empty description
+              'description': 'A complete set of party supplies including balloons, decorations, and tableware, perfect for hosting a fun and memorable event.'
+
             },
           ],
         },
@@ -158,7 +160,7 @@ class HomePage extends StatelessWidget {
               'pledged': true,
               'imageurl': 'https://example.com/laptop.jpg',
               'price': 1000.0,
-              'description': 'A powerful laptop for all your work and play needs.'
+              'description': 'A powerful laptop for all my work and play needs.'
             },
             {
               'giftid': 5,
@@ -167,7 +169,7 @@ class HomePage extends StatelessWidget {
               'pledged': false,
               'imageurl': 'https://example.com/camera.jpg',
               'price': 500.0,
-              'description': '' // Empty description
+              'description': 'A high-quality digital camera that captures stunning photos and videos.'
             },
           ],
         },
@@ -186,7 +188,7 @@ class HomePage extends StatelessWidget {
               'pledged': false,
               'imageurl': 'https://example.com/smartspeaker.jpg',
               'price': 150.0,
-              'description': 'A smart speaker that connects with your home devices.'
+              'description': 'A cutting-edge smart speaker that integrates seamlessly with my home.'
             },
             {
               'giftid': 17,
@@ -195,7 +197,7 @@ class HomePage extends StatelessWidget {
               'pledged': false,
               'imageurl': 'https://example.com/homedecor.jpg',
               'price': 75.0,
-              'description': '' // Empty description
+              'description': 'A stylish and elegant home decor set that includes decorative items such as candles, vases, and throw pillows.'
             },
           ],
         },
@@ -214,7 +216,7 @@ class HomePage extends StatelessWidget {
               'pledged': false,
               'imageurl': 'https://example.com/giftcard.jpg',
               'price': 50.0,
-              'description': '' // Empty description
+              'description': 'A soft and cuddly teddy bear made from plush fabric.'
             },
           ],
         },
@@ -233,7 +235,7 @@ class HomePage extends StatelessWidget {
               'pledged': false,
               'imageurl': 'https://example.com/partydecorations.jpg',
               'price': 40.0,
-              'description': '' // Empty description
+              'description': 'A complete set of vibrant party decorations, including balloons, banners, and streamers.'
             },
           ],
         },
@@ -252,15 +254,180 @@ class HomePage extends StatelessWidget {
               'pledged': false,
               'imageurl': 'https://example.com/christmastree.jpg',
               'price': 100.0,
-              'description': '' // Empty description
+              'description': 'A complete set of decorations for the perfect Christmas tree.'
             },
           ],
         },
       ],
       'friends': [1, 3, 6, 4],
     },
-  ];
+    {
+      'userid': 3,
+      'name': 'Charlie',
+      'phonenumber': '+1122334455',
+      'email': 'charlie@example.com',
+      'address': '789 Pine Rd, Suburbia',
+      'notification_preferences': [
+        'Push Notifications',
+        'SMS Notifications',
 
+      ],
+      'pledgedgifts': [7],
+      'events': [
+        {
+          'eventId': 4,
+          'eventName': 'Housewarming',
+          'eventDate': '2024-12-01',
+          'eventLocation': 'Charlie\'s New House',
+          'category': 'Social',
+          'Status': 'Current',
+          'gifts': [
+            {
+              'giftid': 6,
+              'giftName': 'Wine Glass Set',
+              'category': 'Home',
+              'pledged': true,
+              'imageurl': 'https://example.com/wineglasses.jpg',
+              'price': 40.0,
+              'description': ''
+            },
+          ],
+        },
+      ],
+      'friends': [1, 2, 4, 6],
+    },
+    {
+      'userid': 4,
+      'name': 'David',
+      'phonenumber': '+1998765432',
+      'email': 'david@example.com',
+      'address': '12 Elm St, Downtown',
+      'notification_preferences': [
+        'SMS Notifications',
+        'Email Notifications',
+      ],
+      'pledgedgifts': [6],
+      'events': [
+        {
+          'eventId': 5,
+          'eventName': 'Christmas Party',
+          'eventDate': '2024-12-25',
+          'eventLocation': 'David\'s Apartment',
+          'category': 'Holiday',
+           'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 7,
+              'giftName': 'Bluetooth Speaker',
+              'category': 'Tech',
+              'pledged': true,
+              'imageurl': 'https://example.com/speaker.jpg',
+              'price': 120.0,
+              'description': 'A smart speaker that connects with your home devices.'
+            },
+            {
+              'giftid': 8,
+              'giftName': 'Winter Jacket',
+              'category': 'Fashion',
+              'pledged': false,
+              'imageurl': 'https://example.com/jacket.jpg',
+              'price': 150.0,
+              'description': 'A stylish and warm winter jacket, perfect for keeping cozy during the cold season.'
+
+            },
+          ],
+        },
+      ],
+      'friends': [1, 2, 3, 5],
+    },
+    {
+      'userid': 5,
+      'name': 'Eve',
+      'phonenumber': '+1222333444',
+      'email': 'eve@example.com',
+      'address': '56 Maple Rd, Greenfield',
+      'notification_preferences': [
+        'Push Notifications',
+        'SMS Notifications',
+        'Email Notifications',
+      ],
+      'pledgedgifts': [11, 12],
+      'events': [
+        {
+          'eventId': 6,
+          'eventName': 'Baby Shower',
+          'eventDate': '2025-01-15',
+          'eventLocation': 'Eve\'s House',
+          'category': 'Celebration',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 9,
+              'giftName': 'Baby Stroller',
+              'category': 'Toys',
+              'pledged': true,
+              'imageurl': 'https://example.com/stroller.jpg',
+              'price': 300.0,
+              'description': 'A comfortable and secure baby stroller designed for easy mobility'
+            },
+            {
+              'giftid': 10,
+              'giftName': 'Baby Monitor',
+              'category': 'Toys',
+              'pledged': false,
+              'imageurl': 'https://example.com/monitor.jpg',
+              'price': 80.0,
+              'description': 'A high-quality baby monitor with video and audio capabilities,'
+            },
+          ],
+        },
+      ],
+      'friends': [1, 6, 4],
+    },
+    {
+      'userid': 6,
+      'name': 'Frank',
+      'phonenumber': '+1333444555',
+      'email': 'frank@example.com',
+      'address': '88 Birch St, Lakeside',
+      'notification_preferences': [
+        'Push Notifications',
+        'Email Notifications',
+      ],
+      'pledgedgifts': [9],
+      'events': [
+        {
+          'eventId': 7,
+          'eventName': 'New Year Party',
+          'eventDate': '2024-01-01',
+          'eventLocation': 'Frank\'s Mansion',
+          'category': 'Celebration',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 11,
+              'giftName': 'Portable Charger',
+              'category': 'Tech',
+              'pledged': true,
+              'imageurl': 'https://example.com/charger.jpg',
+              'price': 25.0,
+              'description': 'A compact and powerful portable charger designed to keep my devices powered on the go.'
+            },
+            {
+              'giftid': 12,
+              'giftName': 'Smart Thermostat',
+              'category': 'Home',
+              'pledged': true,
+              'imageurl': 'https://example.com/thermostat.jpg',
+              'price': 200.0,
+              'description': ''
+            },
+          ],
+        },
+      ],
+      'friends': [1, 2, 3, 5],
+    },
+  ];
   final current_user_id = 1; // This will later come from somewhere else, such as a user session
 
 // Function to show the dialog for adding a friend

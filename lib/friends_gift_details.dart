@@ -43,7 +43,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("{$widget.gift.giftName} Details"),
+        title: Text("${widget.gift['giftName']} Details"),
         backgroundColor: Colors.purple,
       ),
       body: SingleChildScrollView(
@@ -60,28 +60,53 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
                     CircleAvatar(
                       radius: 60,
                       backgroundColor: Colors.grey.shade200,
-                      backgroundImage: imageURLController.text.isNotEmpty
-                          ? NetworkImage(imageURLController.text) // Use the URL provided by the user
-                          : null, // If no URL, the icon will stay as the default
                       child: imageURLController.text.isEmpty
                           ? Icon(
                         Icons.camera_alt,
                         size: 50,
                         color: Colors.grey.shade600,
                       )
-                          : null, // If URL is provided, the icon disappears
+                          : Image.network(
+                        imageURLController.text,
+                        width: 120,
+                        height: 120,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) {
+                            return child; // Return the image once it has loaded
+                          }
+                          return Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                  (loadingProgress.expectedTotalBytes ?? 1)
+                                  : null,
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(
+                            Icons.broken_image, // Icon for failed image load
+                            size: 50,
+                            color: Colors.grey.shade600,
+                          );
+                        },
+                      ),
                     ),
                   ],
                 ),
               ),
+
+
               SizedBox(height: 16),
 
               // Gift Name
               TextField(
                 controller: giftNameController,
                 enabled: false, // Disable editing
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600), // Prominent text
                 decoration: InputDecoration(
                   labelText: "Gift Name",
+                  labelStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold), // Prominent label
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
@@ -90,7 +115,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
                     ),
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade200,
+                  fillColor: Colors.white, // Make background white
                   contentPadding: EdgeInsets.all(16),
                 ),
               ),
@@ -101,8 +126,10 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
                 controller: descriptionController,
                 enabled: false, // Disable editing
                 maxLines: 3,
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600), // Prominent text
                 decoration: InputDecoration(
                   labelText: "Description",
+                  labelStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold), // Prominent label
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
@@ -111,7 +138,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
                     ),
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade200,
+                  fillColor: Colors.white, // Make background white
                   contentPadding: EdgeInsets.all(16),
                 ),
               ),
@@ -121,8 +148,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
               DropdownButtonFormField<String>(
                 value: selectedCategory,
                 onChanged: null, // Disable the dropdown
-                //later on will make items to drop down flexible
-                items: ["Tech", "Health","Books", "Toys", "Clothing","Experience","Home","Event","Fashion"]
+                items: ["Tech", "Health", "Books", "Toys", "Clothing", "Experience", "Home", "Event", "Fashion"]
                     .map((category) => DropdownMenuItem(
                   value: category,
                   child: Text(category),
@@ -130,6 +156,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
                     .toList(),
                 decoration: InputDecoration(
                   labelText: 'Category',
+                  labelStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold), // Prominent label
                 ),
               ),
               SizedBox(height: 16),
@@ -139,8 +166,10 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
                 controller: priceController,
                 enabled: false, // Disable editing
                 keyboardType: TextInputType.number,
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600), // Prominent text
                 decoration: InputDecoration(
                   labelText: "Price",
+                  labelStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold), // Prominent label
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
@@ -149,7 +178,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
                     ),
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade200,
+                  fillColor: Colors.white, // Make background white
                   contentPadding: EdgeInsets.all(16),
                 ),
               ),
@@ -159,8 +188,10 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
               TextField(
                 controller: imageURLController,
                 enabled: false, // Disable editing
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.w600), // Prominent text
                 decoration: InputDecoration(
                   labelText: "Image URL",
+                  labelStyle: TextStyle(color: Colors.black, fontWeight: FontWeight.bold), // Prominent label
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
@@ -169,7 +200,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
                     ),
                   ),
                   filled: true,
-                  fillColor: Colors.grey.shade200,
+                  fillColor: Colors.white, // Make background white
                   contentPadding: EdgeInsets.all(16),
                 ),
               ),
