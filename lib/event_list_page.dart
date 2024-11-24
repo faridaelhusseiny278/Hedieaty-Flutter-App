@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class CalendarPage extends StatefulWidget {
+class EventListPage extends StatefulWidget {
+
+
   @override
   _CalendarPageState createState() => _CalendarPageState();
 }
 
-class _CalendarPageState extends State<CalendarPage> {
+class _CalendarPageState extends State<EventListPage> {
   DateTime selectedDate = DateTime.now();
   DateTime firstDayOfMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
   DateTime lastDayOfMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 0);

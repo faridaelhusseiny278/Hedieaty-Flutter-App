@@ -1,9 +1,269 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/friends_event_list.dart';
 import 'rounded_button.dart';
 import 'friend_card.dart';
+import 'friends_event_list.dart';
+import 'event_list_page.dart';
+class Friend {
+  final String name;
+  final int eventCount;
+
+  Friend({required this.name, required this.eventCount});
+}
 
 class HomePage extends StatelessWidget {
-  // Function to show the dialog for adding a friend
+  // Sample list of friends (this can later come from a database)
+  List<Map<String, dynamic>> homePageData = [
+    {
+      'userid': 1,
+      'name': 'Alice',
+      'phonenumber': '+1234567890',
+      'email': 'alice@example.com',
+      'address': '123 Wonderland St, Fantasy City',
+      'notification_preferences': [
+        'Email Notifications',
+      ],
+      'pledgedgifts': [4],
+      'events': [
+        {
+          'eventId': 1,
+          'eventName': 'Birthday Bash',
+          'eventDate': '2024-12-10',
+          'eventLocation': 'Alice\'s House',
+          'category': 'Birthday',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 1,
+              'giftName': 'Smartwatch',
+              'category': 'Tech',
+              'pledged': true,
+              'imageurl': 'https://example.com/smartwatch.jpg',
+              'price': 200.0,
+              'description': 'A sleek smartwatch with fitness tracking features.'
+            },
+            {
+              'giftid': 2,
+              'giftName': 'Fitness Tracker',
+              'category': 'Health',
+              'pledged': true,
+              'imageurl': 'https://example.com/fitnesstracker.jpg',
+              'price': 50.0,
+              'description': '' // Empty description
+            },
+          ],
+        },
+        {
+          'eventId': 2,
+          'eventName': 'Wedding Anniversary',
+          'eventDate': '2024-10-05',
+          'eventLocation': 'Luxury Hotel',
+          'category': 'Social',
+          'Status': 'past',
+          'gifts': [
+            {
+              'giftid': 3,
+              'giftName': 'Romantic Dinner Voucher',
+              'category': 'Experience',
+              'pledged': false,
+              'imageurl': 'https://example.com/dinner.jpg',
+              'price': 150.0,
+              'description': 'A voucher for a romantic dinner at a 5-star restaurant.'
+            },
+          ],
+        },
+        {
+          'eventId': 9,
+          'eventName': 'Housewarming Party',
+          'eventDate': '2024-11-15',
+          'eventLocation': 'Alice\'s New Home',
+          'category': 'Housewarming',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 13,
+              'giftName': 'Wine Glass Set',
+              'category': 'Home',
+              'pledged': false,
+              'imageurl': 'https://example.com/wineglassset.jpg',
+              'price': 40.0,
+              'description': '' // Empty description
+            },
+          ],
+        },
+        {
+          'eventId': 10,
+          'eventName': 'Christmas Celebration',
+          'eventDate': '2024-12-25',
+          'eventLocation': 'Alice\'s House',
+          'category': 'Holiday',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 14,
+              'giftName': 'Christmas Tree Decoration Set',
+              'category': 'Home',
+              'pledged': false,
+              'imageurl': 'https://example.com/christmasdecorations.jpg',
+              'price': 30.0,
+              'description': 'A complete set of decorations for the perfect Christmas tree.'
+            },
+          ],
+        },
+        {
+          'eventId': 11,
+          'eventName': 'New Year Eve Party',
+          'eventDate': '2024-12-31',
+          'eventLocation': 'City Center',
+          'category': 'Celebration',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 15,
+              'giftName': 'Party Supplies',
+              'category': 'Event',
+              'pledged': false,
+              'imageurl': 'https://example.com/partysupplies.jpg',
+              'price': 50.0,
+              'description': '' // Empty description
+            },
+          ],
+        },
+      ],
+      'friends': [2, 3, 6, 5, 4],
+    },
+    {
+      'userid': 2,
+      'name': 'Bob',
+      'phonenumber': '+1987654321',
+      'email': 'bob@example.com',
+      'address': '456 Oak Ave, Citytown',
+      'notification_preferences': [
+        'Push Notifications',
+      ],
+      'pledgedgifts': [1, 2],
+      'events': [
+        {
+          'eventId': 3,
+          'eventName': 'Graduation Party',
+          'eventDate': '2024-11-25',
+          'eventLocation': 'Bob\'s College',
+          'category': 'Celebration',
+          'Status': 'Current',
+          'gifts': [
+            {
+              'giftid': 4,
+              'giftName': 'Laptop',
+              'category': 'Tech',
+              'pledged': true,
+              'imageurl': 'https://example.com/laptop.jpg',
+              'price': 1000.0,
+              'description': 'A powerful laptop for all your work and play needs.'
+            },
+            {
+              'giftid': 5,
+              'giftName': 'Camera',
+              'category': 'Tech',
+              'pledged': false,
+              'imageurl': 'https://example.com/camera.jpg',
+              'price': 500.0,
+              'description': '' // Empty description
+            },
+          ],
+        },
+        {
+          'eventId': 14,
+          'eventName': 'Housewarming Party',
+          'eventDate': '2024-07-15',
+          'eventLocation': 'Bob\'s New Apartment',
+          'category': 'Housewarming',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 16,
+              'giftName': 'Smart Home Speaker',
+              'category': 'Tech',
+              'pledged': false,
+              'imageurl': 'https://example.com/smartspeaker.jpg',
+              'price': 150.0,
+              'description': 'A smart speaker that connects with your home devices.'
+            },
+            {
+              'giftid': 17,
+              'giftName': 'Home Decor Set',
+              'category': 'Home',
+              'pledged': false,
+              'imageurl': 'https://example.com/homedecor.jpg',
+              'price': 75.0,
+              'description': '' // Empty description
+            },
+          ],
+        },
+        {
+          'eventId': 15,
+          'eventName': 'Birthday Celebration',
+          'eventDate': '2024-08-10',
+          'eventLocation': 'Bob\'s Backyard',
+          'category': 'Birthday',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 18,
+              'giftName': 'Teddy Bear',
+              'category': 'Toys',
+              'pledged': false,
+              'imageurl': 'https://example.com/giftcard.jpg',
+              'price': 50.0,
+              'description': '' // Empty description
+            },
+          ],
+        },
+        {
+          'eventId': 16,
+          'eventName': 'New Year\'s Eve Party',
+          'eventDate': '2024-12-31',
+          'eventLocation': 'Bob\'s House',
+          'category': 'Celebration',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 19,
+              'giftName': 'Party Decorations',
+              'category': 'Event',
+              'pledged': false,
+              'imageurl': 'https://example.com/partydecorations.jpg',
+              'price': 40.0,
+              'description': '' // Empty description
+            },
+          ],
+        },
+        {
+          'eventId': 17,
+          'eventName': 'Christmas Dinner',
+          'eventDate': '2024-12-25',
+          'eventLocation': 'Bob\'s House',
+          'category': 'Holiday',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 20,
+              'giftName': 'Christmas Tree',
+              'category': 'Home',
+              'pledged': false,
+              'imageurl': 'https://example.com/christmastree.jpg',
+              'price': 100.0,
+              'description': '' // Empty description
+            },
+          ],
+        },
+      ],
+      'friends': [1, 3, 6, 4],
+    },
+  ];
+
+  final current_user_id = 1; // This will later come from somewhere else, such as a user session
+
+// Function to show the dialog for adding a friend
   void _showAddFriendDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -38,6 +298,15 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Find the current user's data
+    var currentUser = homePageData.firstWhere((user) =>
+    user['userid'] == current_user_id);
+
+    // Filter the list of friends based on the current user's friends
+    List<Map<String, dynamic>> friendsList = homePageData.where((user) {
+      return currentUser['friends'].contains(user['userid']);
+    }).toList();
+
     return Scaffold(
       body: Stack(
         children: [
@@ -123,13 +392,28 @@ class HomePage extends StatelessWidget {
                 SizedBox(height: 20),
                 // List of friends with their gift lists and upcoming events
                 Expanded(
-                  child: ListView(
+                  child: ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16),
-                    children: [
-                      FriendCard(name: "John Doe", eventCount: 1),
-                      FriendCard(name: "Jane Smith", eventCount: 0),
-                      FriendCard(name: "Alex Green", eventCount: 2),
-                    ],
+                    itemCount: friendsList.length,
+                    // Updated to display only friends
+                    itemBuilder: (context, index) {
+                      var friend = friendsList[index]; // Get the friend data
+                      return FriendCard(
+                        name: friend['name'],
+                        eventCount: friend['events'].length,
+                        // Calculate event count
+                        onTap: () {
+                          // Navigate to the gift list page and pass the clicked friend's data
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => FriendsEventList(
+                                  frienddata: friend), // Pass the friend data
+                            ),
+                          );
+                        },
+                      );
+                    },
                   ),
                 ),
               ],
@@ -144,19 +428,6 @@ class HomePage extends StatelessWidget {
         child: Icon(Icons.add, size: 30),
         backgroundColor: Colors.deepPurple,
       ),
-      // bottomNavigationBar: BottomNavigationBar(
-      //   backgroundColor: Colors.black,
-      //   selectedItemColor: Colors.white,
-      //   unselectedItemColor: Colors.grey.shade400,
-      //   type: BottomNavigationBarType.fixed,
-      //   items: [
-      //     BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-      //     BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: ''),
-      //     BottomNavigationBarItem(icon: Icon(Icons.add_circle, size: 40, color: Colors.white), label: ''),
-      //     BottomNavigationBarItem(icon: Icon(Icons.notifications_none), label: ''),
-      //     BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: ''),
-      //   ],
-      // ),
     );
   }
 }

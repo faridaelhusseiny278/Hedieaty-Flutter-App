@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 class FriendCard extends StatelessWidget {
   final String name;
   final int eventCount;
+  final VoidCallback onTap;  // Add onTap parameter
 
-  FriendCard({required this.name, required this.eventCount});
+  // Modify the constructor to accept the onTap callback
+  FriendCard({required this.name, required this.eventCount, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +16,6 @@ class FriendCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Color(0xFFE0E5EC),
         borderRadius: BorderRadius.circular(16.0),
-
       ),
       child: ListTile(
         leading: CircleAvatar(
@@ -33,9 +34,7 @@ class FriendCard extends StatelessWidget {
           style: TextStyle(color: Color(0xFF666680)),
         ),
         trailing: Icon(Icons.chevron_right, color: Color(0xFF666680)),
-        onTap: () {
-          // Navigate to friend's details or event list
-        },
+        onTap: onTap,  // Pass the onTap callback
       ),
     );
   }

@@ -12,7 +12,7 @@ class GiftItem extends StatelessWidget {
     required this.giftName,
     required this.category,
     required this.pledged,
-    this.imageurl = '', // Default value if no image URL is provided
+    this.imageurl = '',
     required this.onPressed,
     required this.onLongPress,
   });
