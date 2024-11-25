@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class PledgedListPage extends StatefulWidget {
+  final int userid;
+  final List<Map<String, dynamic>> Database;
+  PledgedListPage({required this.userid, required this.Database});
+
   @override
   _PledgedListPageState createState() => _PledgedListPageState();
 }
@@ -9,44 +13,59 @@ class PledgedListPage extends StatefulWidget {
 class _PledgedListPageState extends State<PledgedListPage> {
   final DateFormat formatter = DateFormat('yyyy-MM-dd');
 
-  // Sample list of pledged gifts
-  List<Map<String, dynamic>> pledgedGifts = [
-    {
-      "friendName": "Alice",
-      "giftName": "Photo Album",
-      "dueDate": DateTime(2024, 11, 20),
-      'image': 'assets/istockphoto-1296058958-612x612.jpg'
-    },
-    {
-      "friendName": "Bob",
-      "giftName": "Board Game",
-      "dueDate": DateTime(2024, 11, 25),
-      'image': 'assets/istockphoto-1371904269-612x612.jpg'
-    },
-    {
-      "friendName": "Charlie",
-      "giftName": "Coffee Mug",
-      "dueDate": DateTime(2024, 11, 15),
-      'image': 'assets/istockphoto-1417086080-612x612.jpg'
-    },
-    {
-      "friendName": "Diana",
-      "giftName": "Perfume Set",
-      "dueDate": DateTime(2024, 12, 5),
-      'image': 'assets/young-smiling-man-adam-avatar-600nw-2107967969.png'
-    },
-    {
-      "friendName": "Eve",
-      "giftName": "Headphones",
-      "dueDate": DateTime(2024, 12, 10),
-      'image': 'assets/young-smiling-woman-mia-avatar-600nw-2127358541.png'
-    },
-  ];
+  late List<Map<String, dynamic>> pledgedGifts; // List to store pledged gifts
+  @override
+  void initState() {
+    super.initState();
+    _loadPledgedGifts();
+    print("pledgedgifts are $pledgedGifts");
+  }
+  void _loadPledgedGifts() {
+    // Find the user based on userid
+    final user = widget.Database.firstWhere((user) => user['userid'] == widget.userid);
+    print("user is $user");
+
+    // Extract pledged gift IDs
+    final pledgedGiftIds = user['pledgedgifts'];
+    print("pledgedGiftIds is $pledgedGiftIds");
+
+    // Initialize pledged gifts list
+    pledgedGifts = [];
+
+    // Iterate over the user's friends
+    for (var friendId in user['friends']) {
+      // Find the friend in the database
+      final friend = widget.Database.firstWhere((user) => user['userid'] == friendId, orElse: () => {});
+      if (friend == null) continue; // Skip if no friend found
+
+      // Check all events of this friend
+      for (var event in friend['events']) {
+        for (var gift in event['gifts']) {
+          // Check if the giftId is in the pledged list
+          if (pledgedGiftIds.contains(gift['giftid'])) {
+            // Add the gift to the pledged list
+            pledgedGifts.add({
+              'giftName': gift['giftName'],
+              'imageurl': gift['imageurl'],
+              'price': gift['price'],
+              'description': gift['description'],
+              'eventName': event['eventName'],
+              'eventDate': DateTime.parse(event['eventDate']),
+              'friendName': friend['name'], // Get the friend's name
+            });
+          }
+        }
+      }
+    }
+    pledgedGifts.sort((a, b) => b['eventDate'].compareTo(a['eventDate']));
+    print("pledgedGifts are $pledgedGifts");
+  }
+
 
   @override
   Widget build(BuildContext context) {
     // Sort the list by due date, most recent to oldest
-    pledgedGifts.sort((a, b) => b['dueDate'].compareTo(a['dueDate']));
+    pledgedGifts.sort((a, b) => b['eventDate'].compareTo(a['eventDate']));
 
     return Scaffold(
       appBar: AppBar(
@@ -63,7 +82,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
         itemBuilder: (context, index) {
           final gift = pledgedGifts[index];
           final now = DateTime.now();
-          final bool isOverdue = gift['dueDate'].isBefore(now);
+          final bool isOverdue = gift['eventDate'].isBefore(now);
 
           return Padding(
             padding: const EdgeInsets.symmetric(
@@ -76,7 +95,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                 // Circle avatar with the image
                 CircleAvatar(
                   radius: 32.0,
-                  backgroundImage: AssetImage(gift['image']),
+                  backgroundImage: AssetImage(gift['imageurl']),
                   backgroundColor: Colors.grey.shade200,
                 ),
                 const SizedBox(width: 16.0),
@@ -108,7 +127,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                         ),
                         const SizedBox(height: 8.0),
                         Text(
-                          'Due Date: ${formatter.format(gift['dueDate'])}',
+                          'Due Date: ${formatter.format(gift['eventDate'])}',
                           style: TextStyle(
                             fontSize: 14.0,
                             color: isOverdue ? Colors.red : Colors.grey,

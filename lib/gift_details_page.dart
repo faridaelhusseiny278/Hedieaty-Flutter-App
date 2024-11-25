@@ -22,7 +22,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   void initState() {
     super.initState();
     // Initialize controllers with the gift details
-    giftNameController = TextEditingController(text: widget.giftDetails['name']);
+    giftNameController = TextEditingController(text: widget.giftDetails['giftName']);
     descriptionController = TextEditingController(text: widget.giftDetails['description'] ?? "");
     priceController = TextEditingController(text: widget.giftDetails['price']?.toString() ?? "");
     imageURLController = TextEditingController(text: widget.giftDetails['imageurl']?.toString() ?? "");
@@ -158,7 +158,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                     selectedCategory = newValue!;
                   });
                 },
-                items: ["Electronics", "Books", "Toys", "Clothing"]
+                items: ["Tech", "Health", "Books", "Toys", "Clothing", "Experience", "Home", "Event", "Fashion"]
                     .map((category) => DropdownMenuItem(
                   value: category,
                   child: Text(category),
@@ -291,7 +291,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                   } else {
                     // Ensure the returned values are never null
                     Navigator.pop(context, {
-                      'name': giftNameController.text.isNotEmpty
+                      'giftName': giftNameController.text.isNotEmpty
                           ? giftNameController.text
                           : "Unnamed Gift",
                       'category': selectedCategory,

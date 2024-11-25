@@ -1,36 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/Event.dart';
 import 'rounded_button.dart';
 import 'gift_item.dart';
 import 'gift_details_page.dart';
+import 'Event.dart';
 
 class GiftListPage extends StatefulWidget {
+
+  final Event event;
+  GiftListPage({required this.event});
+  // extract gifts from events
+
   @override
   _GiftListPageState createState() => _GiftListPageState();
 }
 
 class _GiftListPageState extends State<GiftListPage> {
-  String eventName = "Birthday";
+  // String eventName = "Birthday";
   String selectedFilter = 'name';
   TextEditingController giftNameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
   String selectedCategory = "Electronics"; // Default value
 
-  List<Map<String, dynamic>> gifts = [
-    {'name': 'Teddy Bear', 'category': 'Toys', 'pledged': false,'imageurl':'https://th.bing.com/th/id/OIP.1gzFgCamhP5TDxg44AYKwwAAAA?rs=1&pid=ImgDetMain' },
-    {'name': 'Perfume Set', 'category': 'Toys', 'pledged': false,'imageurl':''},
-    {'name': 'Smartwatch', 'category': 'Electronics',  'pledged': true,'imageurl':''},
-    {'name': 'Book', 'category': 'Books', 'pledged': false,'imageurl':''},
-  ];
+  // List<Map<String, dynamic>> gifts = [
+  //   {'name': 'Teddy Bear', 'category': 'Toys', 'pledged': false,'imageurl':'https://th.bing.com/th/id/OIP.1gzFgCamhP5TDxg44AYKwwAAAA?rs=1&pid=ImgDetMain' },
+  //   {'name': 'Perfume Set', 'category': 'Toys', 'pledged': false,'imageurl':''},
+  //   {'name': 'Smartwatch', 'category': 'Electronics',  'pledged': true,'imageurl':''},
+  //   {'name': 'Book', 'category': 'Books', 'pledged': false,'imageurl':''},
+  // ];
+  late List<Map<String, dynamic>> gifts;
 
+  @override
+  void initState() {
+    super.initState();
+    // Extract all gifts from the events
+    gifts = widget.event.gifts;
+  }
   // Sort gifts by selected criteria
   void sortGifts(String criteria) {
     setState(() {
       if (criteria == 'name') {
-        gifts.sort((a, b) => a['name'].compareTo(b['name']));
+        this.gifts.sort((a, b) => a['name'].compareTo(b['name']));
       } else if (criteria == 'category') {
-        gifts.sort((a, b) => a['category'].compareTo(b['category']));
+        this.gifts.sort((a, b) => a['category'].compareTo(b['category']));
       } else if (criteria == 'status') {
-        gifts.sort((a, b) => b['pledged'] == true ? 1 : 0 - (a['pledged'] == true ? 1 : 0));
+        this.gifts.sort((a, b) => b['pledged'] == true ? 1 : 0 - (a['pledged'] == true ? 1 : 0));
 
       }
     });
@@ -84,7 +98,7 @@ class _GiftListPageState extends State<GiftListPage> {
   // Function to handle delete operation
   void _deleteGift(int index) {
     setState(() {
-      gifts.removeAt(index);
+      this.gifts.removeAt(index);
     });
   }
 
@@ -94,7 +108,7 @@ class _GiftListPageState extends State<GiftListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(eventName),
+        title: Text("${widget.event.name} gift list"),
         backgroundColor:Colors.deepPurple,
       ),
       body: Stack(
@@ -155,7 +169,7 @@ class _GiftListPageState extends State<GiftListPage> {
                         child: TextField(
                           onChanged: (value) {
                             setState(() {
-                              gifts = gifts.where((gift) {
+                              gifts = this.gifts.where((gift) {
                                 return gift[selectedFilter]!
                                     .toString()
                                     .toLowerCase()
@@ -199,7 +213,7 @@ class _GiftListPageState extends State<GiftListPage> {
                           MaterialPageRoute(
                             builder: (context) => GiftDetailsPage(
                               giftDetails: {
-                                'name': '',
+                                'giftName': '',
                                 'category': selectedCategory, // Default category
                                 'description': '',
                                 'pledged': false, // Default pledge status
@@ -213,7 +227,7 @@ class _GiftListPageState extends State<GiftListPage> {
                         if (updatedGift != null) {
                           // Add the new or updated gift to the list
                           setState(() {
-                            gifts.add(updatedGift);
+                            widget.event.gifts.add(updatedGift);
                           });
                         }
                       },
@@ -233,11 +247,13 @@ class _GiftListPageState extends State<GiftListPage> {
                 Expanded(
                   child: ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: gifts.length,
+                    itemCount: widget.event.gifts.length,
                     itemBuilder: (context, index) {
-                      var gift = gifts[index];
+                      var gift = widget.event.gifts[index];
+                      print("gift is $gift");
+
                       return GiftItem(
-                        giftName: gift['name'],
+                        giftName: gift['giftName'],
                         category: gift['category'],
                         pledged: gift['pledged'],
                         imageurl: gift['imageurl'],
@@ -246,14 +262,14 @@ class _GiftListPageState extends State<GiftListPage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) => GiftDetailsPage(
-                                giftDetails: gifts[index], // Pass the selected gift details
+                                giftDetails: widget.event.gifts[index], // Pass the selected gift details
                               ),
                             ),
                           );
                           if (updatedGift != null) {
                             setState(() {
                               // Update the gift in the list with the modified data
-                              gifts[index] = updatedGift;
+                              widget.event.gifts[index] = updatedGift;
                             });
                           }
                         },
@@ -268,7 +284,7 @@ class _GiftListPageState extends State<GiftListPage> {
                                   TextButton(
                                     onPressed: () {
                                       setState(() {
-                                        gifts.removeAt(index);
+                                        widget.event.gifts.removeAt(index);
                                       });
                                       Navigator.of(context).pop();
                                     },

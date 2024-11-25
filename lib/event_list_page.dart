@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/gift_list_page.dart';
 import 'package:intl/intl.dart';
+import 'Event.dart';
 
 class EventListPage extends StatefulWidget {
-
+  final int userid;
+  final List<Map<String, dynamic>> Database;
+  EventListPage({required this.userid, required this.Database});
 
   @override
   _CalendarPageState createState() => _CalendarPageState();
 }
 
 class _CalendarPageState extends State<EventListPage> {
+  Event? highlightedEvent;
   DateTime selectedDate = DateTime.now();
   DateTime firstDayOfMonth = DateTime(DateTime.now().year, DateTime.now().month, 1);
   DateTime lastDayOfMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 0);
@@ -17,50 +22,34 @@ class _CalendarPageState extends State<EventListPage> {
   final ScrollController _scrollController = ScrollController();
 
   List<Event> selectedEvents = [];
-  List<Event> events = [
-    Event(
-        name: 'Birthday Gift Planning',
-        category: 'Occasion',
-        status: 'Upcoming',
-        location: 'Home Office',
-        date: DateTime(2024, 10, 30, 10, 0)),
-    Event(
-        name: 'Wedding Registry Setup',
-        category: 'Milestone',
-        status: 'Current',
-        location: '7392 W Belt Line Rd Round Rock',
-        date: DateTime(2024, 10, 30, 13, 30)),
-    Event(
-        name: 'Graduation Celebration Prep',
-        category: 'Celebration',
-        status: 'Upcoming',
-        location: '9118 Elm St Chandler',
-        date: DateTime(2024, 10, 31, 15, 30)),
-    Event(
-        name: 'Holiday Gift Shopping',
-        category: 'Seasonal',
-        status: 'Upcoming',
-        location: 'Mall Center',
-        date: DateTime(2024, 11, 1, 12, 0)),
-  ];
+  late List<Event> events;
+
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      // Check if the user has scrolled enough to change the month
-      double offset = _scrollController.offset;
-      int index = (offset / 80).round(); // Estimate index based on the scroll offset
-      DateTime newSelectedDate = firstDayOfMonth.add(Duration(days: index));
 
-      // If month has changed, update selectedDate and the first/last day of the new month
-      if (newSelectedDate.month != selectedDate.month) {
-        setState(() {
-          selectedDate = newSelectedDate;
-          firstDayOfMonth = DateTime(newSelectedDate.year, newSelectedDate.month, 1);
-          lastDayOfMonth = DateTime(newSelectedDate.year, newSelectedDate.month + 1, 0);
-        });
-      }
-    });
+    // Filter user data based on userid
+    final userData = widget.Database.firstWhere(
+          (user) => user['userid'] == widget.userid,
+      orElse: () => {}, // Return null if no user is found
+    );
+
+    // Check if userData is found
+    if (userData != null) {
+      events = (userData['events'] as List).map((eventData) {
+        return Event(
+          name: eventData['eventName'],
+          category: eventData['category'],
+          status: eventData['Status'],
+          date: DateTime.parse(eventData['eventDate']),
+          location: eventData['eventLocation'],
+          gifts: eventData['gifts'],
+        );
+      }).toList();
+    } else {
+      // If no user data is found, initialize an empty list of events
+      events = [];
+    }
   }
 
   void _toggleSelectAll(bool value) {
@@ -133,12 +122,12 @@ class _CalendarPageState extends State<EventListPage> {
         backgroundColor: Colors.deepPurple,
         elevation: 0,
         title: Text(
-          showCalendar? DateFormat('MMMM yyyy').format(selectedDate): "All Events",
+          "My Events",
           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
-            icon: Icon(showCalendar ? Icons.event : Icons.calendar_today, color: Colors.white),
+            icon: Icon(Icons.calendar_today, color: Colors.white),
             onPressed: () => setState(() => showCalendar = !showCalendar),
           ),
           IconButton(
@@ -154,22 +143,13 @@ class _CalendarPageState extends State<EventListPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: showCalendar ? _buildCalendarView() : _buildEventsListView(),
+        child: _buildEventsListView(),
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
 
-  Widget _buildCalendarView() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildDateRow(),
-        const SizedBox(height: 16),
-        Expanded(child: _buildEventsListView()),
-      ],
-    );
-  }
+
 
   Widget _buildEventsListView() {
     return ListView(
@@ -181,7 +161,7 @@ class _CalendarPageState extends State<EventListPage> {
     bool isSelected = selectedEvents.contains(event);
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
-      color: isSelected ? Colors.deepPurple[100] : Colors.white,
+      color: highlightedEvent == event ? Colors.deepPurple[100] : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16.0),
       ),
@@ -189,6 +169,20 @@ class _CalendarPageState extends State<EventListPage> {
       elevation: 6,
       child: ListTile(
         contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        onTap: () {
+          print("event is $event");
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => GiftListPage(event: event),
+            ),
+          );
+        },
+        onLongPress: () {
+          setState(() {
+            highlightedEvent = highlightedEvent == event ? null : event; // Toggle highlight
+          });
+        },
         leading: Checkbox(
           value: isSelected,
           onChanged: (_) => _toggleEventSelection(event),
@@ -211,86 +205,17 @@ class _CalendarPageState extends State<EventListPage> {
             ),
           ],
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.edit, color: Colors.deepPurple),
-          onPressed: () => _addOrEditEvent(event: event),
+        trailing: Icon(
+          Icons.arrow_forward_ios,
+          color: Colors.deepPurple,
+          size: 18,
         ),
       ),
     );
   }
 
-  Widget _buildDateRow() {
-    DateTime today = DateTime.now();
-    DateTime firstDayOfMonth = DateTime(today.year, today.month, 1);
-    DateTime lastDayOfMonth = DateTime(today.year, today.month + 1, 0);
 
-    List<DateTime> dates = [];
-    for (int i = 0; i <= lastDayOfMonth.day - firstDayOfMonth.day; i++) {
-      dates.add(firstDayOfMonth.add(Duration(days: i)));
-    }
 
-    DateTime? selectedDate; // Holds the currently selected date
-
-    return StatefulBuilder(builder: (context, setState) {
-      return SizedBox(
-        height: 80, // Fixed height to ensure space for the calendar
-        child: ListView.builder(
-          scrollDirection: Axis.horizontal, // Enable horizontal scrolling
-          physics: const AlwaysScrollableScrollPhysics(), // Allow scrolling
-          itemCount: dates.length,
-          itemBuilder: (context, index) {
-            DateTime date = dates[index];
-            bool isToday = date.day == today.day &&
-                date.month == today.month &&
-                date.year == today.year;
-            bool isSelected = selectedDate != null &&
-                date.day == selectedDate!.day &&
-                date.month == selectedDate!.month &&
-                date.year == selectedDate!.year;
-
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  selectedDate = date;
-                });
-                // You can handle additional logic for the selected date here.
-                print("Selected Date: ${date.toLocal()}");
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: Column(
-                  children: [
-                    Text(
-                      ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.weekday % 7],
-                      style: TextStyle(
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: isSelected
-                          ? Colors.orange
-                          : isToday
-                          ? Colors.deepPurple
-                          : Colors.transparent,
-                      child: Text(
-                        '${date.day}',
-                        style: TextStyle(
-                          color: isSelected || isToday ? Colors.white : Colors.black,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      );
-    });
-  }
 
 
 
@@ -322,9 +247,37 @@ class _CalendarPageState extends State<EventListPage> {
           IconButton(
             icon: Icon(
               Icons.delete,
-              color: selectedEvents.isNotEmpty ? Colors.deepPurple : Colors.grey,
+              color: highlightedEvent != null ? Colors.deepPurple : Colors.grey,
             ),
-            onPressed: selectedEvents.isNotEmpty ? _deleteSelectedEvents : null,
+            onPressed: highlightedEvent != null
+                ? () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: Text('Delete Event'),
+                    content: Text('Are you sure you want to delete this event?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setState(() {
+                            events.remove(highlightedEvent);
+                            highlightedEvent = null; // Clear highlight
+                          });
+                          Navigator.of(context).pop();
+                        },
+                        child: Text('Delete', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  );
+                },
+              );
+            }
+                : null,
           ),
         ],
       ),
@@ -332,21 +285,8 @@ class _CalendarPageState extends State<EventListPage> {
   }
 }
 
-class Event {
-  String name;
-  String category;
-  String status;
-  DateTime date;
-  String location; // Add this property
 
-  Event({
-    required this.name,
-    required this.category,
-    required this.status,
-    required this.date,
-    required this.location, // Make location required
-  });
-}
+
 class EventForm extends StatelessWidget {
   final Event? event;
   final Function(Event) onSave;
@@ -426,6 +366,7 @@ class EventForm extends StatelessWidget {
                     status: _statusController.text,
                     date: event?.date ?? DateTime.now(),
                     location: _locationController.text,
+                    gifts: []
                   );
                   onSave(newEvent);
                 }
