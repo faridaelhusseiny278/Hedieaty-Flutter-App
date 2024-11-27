@@ -15,7 +15,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   late TextEditingController descriptionController;
   late TextEditingController priceController;
   late TextEditingController imageURLController = TextEditingController();
-  String selectedCategory = "Electronics"; // Default category
+  String selectedCategory = "Tech"; // Default category
   bool isPledged = false; // Default status
 
   @override
@@ -26,7 +26,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
     descriptionController = TextEditingController(text: widget.giftDetails['description'] ?? "");
     priceController = TextEditingController(text: widget.giftDetails['price']?.toString() ?? "");
     imageURLController = TextEditingController(text: widget.giftDetails['imageurl']?.toString() ?? "");
-    selectedCategory = widget.giftDetails['category'] ?? "Electronics";
+    selectedCategory = widget.giftDetails['category'] ?? "Tech";
     isPledged = widget.giftDetails['pledged'] ?? false; // This line remains unchanged
   }
 
@@ -283,13 +283,13 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
               ElevatedButton(
                 onPressed: () {
                   if (isPledged) {
+
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text("Pledged gifts cannot be modified."),
                       ),
                     );
                   } else {
-                    // Ensure the returned values are never null
                     Navigator.pop(context, {
                       'giftName': giftNameController.text.isNotEmpty
                           ? giftNameController.text
@@ -300,7 +300,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                           : "No Description",
                       'price': double.tryParse(priceController.text) ?? 0.0,
                       'pledged': isPledged,
-                      'imageurl': imageURLController.text, // Send the image URL here
+                      'imageurl': imageURLController.text.isNotEmpty? imageURLController.text: "" // Send the image URL here
                     });
                   }
                 },

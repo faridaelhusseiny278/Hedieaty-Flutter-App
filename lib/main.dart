@@ -34,7 +34,7 @@ class MyApp extends StatelessWidget {
               'giftid': 1,
               'giftName': 'Smartwatch',
               'category': 'Tech',
-              'pledged': true,
+              'pledged': false,
               'imageurl': 'https://example.com/smartwatch.jpg',
               'price': 200.0,
               'description': 'A sleek smartwatch with fitness tracking features.'
@@ -256,7 +256,7 @@ class MyApp extends StatelessWidget {
           ],
         },
       ],
-      'friends': [1, 3, 6, 4],
+      'friends': [1, 3, 6, 4,8],
     },
     {
       'userid': 3,
@@ -291,7 +291,7 @@ class MyApp extends StatelessWidget {
           ],
         },
       ],
-      'friends': [1, 2, 4, 6],
+      'friends': [1, 2, 4, 6,8],
     },
     {
       'userid': 4,
@@ -335,7 +335,7 @@ class MyApp extends StatelessWidget {
           ],
         },
       ],
-      'friends': [1, 2, 3, 5],
+      'friends': [1, 2, 3, 5,8],
     },
     {
       'userid': 5,
@@ -371,7 +371,7 @@ class MyApp extends StatelessWidget {
               'giftid': 10,
               'giftName': 'Baby Monitor',
               'category': 'Toys',
-              'pledged': false,
+              'pledged': true,
               'imageurl': 'https://example.com/monitor.jpg',
               'price': 80.0,
               'description': 'A high-quality baby monitor with video and audio capabilities,'
@@ -424,6 +424,93 @@ class MyApp extends StatelessWidget {
       ],
       'friends': [1, 2, 3, 5],
     },
+    {
+      'userid': 7,
+      'name': 'Alice',
+      'phonenumber': '+1444555666',
+      'email': 'alice@example.com',
+      'address': '101 Maple St, Townville',
+      'notification_preferences': [
+        'SMS Notifications',
+        'Push Notifications'
+      ],
+      'pledgedgifts': [10],
+      'events': [
+        {
+          'eventId': 8,
+          'eventName': 'Birthday Bash',
+          'eventDate': '2024-03-20',
+          'eventLocation': 'Alice\'s House',
+          'category': 'Celebration',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 20,
+              'giftName': 'Smartphone',
+              'category': 'Tech',
+              'pledged': true,
+              'imageurl': 'https://example.com/smartphone.jpg',
+              'price': 800.0,
+              'description': 'A new high-end smartphone with the latest features and specs.'
+            },
+            {
+              'giftid': 21,
+              'giftName': 'Bluetooth Headphones',
+              'category': 'Tech',
+              'pledged': false,
+              'imageurl': 'https://example.com/headphones.jpg',
+              'price': 150.0,
+              'description': 'Wireless headphones with noise cancellation and high-quality sound.'
+            }
+          ]
+        }
+      ],
+      'friends': [2, 3, 4]
+    },
+    {
+      'userid': 8,
+      'name': 'Farida',
+      'phonenumber': '+128456',
+      'email': 'Farida@example.com',
+      'address': '11 Maple St, Townville',
+      'notification_preferences': [
+        'SMS Notifications',
+        'Push Notifications'
+      ],
+      'pledgedgifts': [10],
+      'events': [
+        {
+          'eventId': 29,
+          'eventName': 'Birthday Party',
+          'eventDate': '2024-03-20',
+          'eventLocation': 'Alice\'s House',
+          'category': 'Celebration',
+          'Status': 'Upcoming',
+          'gifts': [
+            {
+              'giftid': 13,
+              'giftName': 'Smartphone',
+              'category': 'Tech',
+              'pledged': false,
+              'imageurl': 'https://example.com/smartphone.jpg',
+              'price': 800.0,
+              'description': 'A new high-end smartphone with the latest features and specs.'
+            },
+            {
+              'giftid': 14,
+              'giftName': 'Bluetooth Headphones',
+              'category': 'Tech',
+              'pledged': false,
+              'imageurl': 'https://example.com/headphones.jpg',
+              'price': 150.0,
+              'description': 'Wireless headphones with noise cancellation and high-quality sound.'
+            }
+          ]
+        }
+      ],
+      'friends': [2, 3, 4]
+    }
+
   ];
   @override
   Widget build(BuildContext context) {

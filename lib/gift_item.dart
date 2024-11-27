@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 
-class GiftItem extends StatelessWidget {
+class GiftItem extends StatefulWidget {
   final String giftName;
   final String category;
   final bool pledged;
+  final String description;
   String imageurl; // Image URL for the avatar
+  double price;
   final VoidCallback onPressed;
   final VoidCallback onLongPress;
 
@@ -13,15 +15,50 @@ class GiftItem extends StatelessWidget {
     required this.category,
     required this.pledged,
     this.imageurl = '',
+    required this.price,
+    required this.description,
     required this.onPressed,
     required this.onLongPress,
   });
 
   @override
+  State<GiftItem> createState() => _GiftItemState();
+}
+
+class _GiftItemState extends State<GiftItem> {
+  bool _isValidImage = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkImageValidity();
+  }
+
+  Future<void> _checkImageValidity() async {
+    if (widget.imageurl.isEmpty) {
+      setState(() {
+        _isValidImage = false;
+      });
+      return;
+    }
+    try {
+      final response = Uri.tryParse(widget.imageurl);
+      if (response == null) throw Exception("Invalid URL");
+      setState(() {
+        _isValidImage = true;
+      });
+    } catch (e) {
+      setState(() {
+        _isValidImage = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onLongPress: onLongPress,
-      onTap: onPressed,
+      onLongPress: widget.onLongPress,
+      onTap: widget.onPressed,
       child: Container(
         margin: EdgeInsets.symmetric(vertical: 10),
         padding: EdgeInsets.all(2), // Space for gradient border
@@ -39,22 +76,60 @@ class GiftItem extends StatelessWidget {
         child: Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: pledged ? Colors.green[100] : Colors.white,
+            color: widget.pledged ? Colors.green[100] : Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
-          child: ListTile(
-
-            leading: imageurl.isNotEmpty
-                ? CircleAvatar(
-              backgroundImage: NetworkImage(imageurl), // NetworkImage for the circular avatar
-              radius: 25, // Size of the avatar
-            )
-                : null, // No image, no avatar
-            title: Text(
-              giftName,
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text('$category'),
+          child: Row(
+            children: [
+              // Conditionally render the avatar based on _isValidImage
+              if (_isValidImage)
+                CircleAvatar(
+                  backgroundImage: NetworkImage(widget.imageurl),
+                  radius: 40,
+                  onBackgroundImageError: (_, __) {
+                    setState(() {
+                      _isValidImage = false;
+                    });
+                  },
+                )
+              else
+                // CircleAvatar(
+                //   backgroundColor: Colors.grey, // Fallback color for invalid URL
+                //   radius: 40,
+                // ),
+              SizedBox(width: 16), // Spacing for the avatar
+              // Main gift information
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.giftName,
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      widget.category,
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    if (widget.pledged)
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Pledged',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),

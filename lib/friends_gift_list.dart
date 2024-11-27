@@ -164,6 +164,8 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                         category: gift['category'],
                         pledged: gift['pledged'],
                         imageurl: gift['imageurl'],
+                        description: gift['description'],
+                        price: gift['price'],
                         onPressed: () async {
                           final updatedGift = await Navigator.push(
                             context,

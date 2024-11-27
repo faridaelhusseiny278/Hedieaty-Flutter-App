@@ -4,6 +4,7 @@ import 'rounded_button.dart';
 import 'friend_card.dart';
 import 'friends_event_list.dart';
 import 'event_list_page.dart';
+import 'createEvent.dart';
 class Friend {
   final String name;
   final int eventCount;
@@ -12,13 +13,64 @@ class Friend {
   Friend({required this.name, required this.eventCount});
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   final int userid;
   final List<Map<String, dynamic>> Database;
   HomePage({required this.userid, required this.Database});
 
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
 
-// Function to show the dialog for adding a friend
+class _HomePageState extends State<HomePage> {
+  TextEditingController _searchController = TextEditingController();
+  late List<Map<String, dynamic>> friendsList;
+
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize the friends list on page load based on the current user's data
+    var currentUser = widget.Database.firstWhere((user) =>
+    user['userid'] == widget.userid);
+
+    friendsList = widget.Database.where((user) {
+      return currentUser['friends'].contains(user['userid']);
+    }).toList();
+
+    // Add listener to search controller
+    _searchController.addListener(() {
+      _filterFriendsList(_searchController.text);
+    });
+  }
+
+  void _filterFriendsList(String query) {
+    var currentUser = widget.Database.firstWhere(
+            (user) => user['userid'] == widget.userid);
+
+    setState(() {
+      friendsList = widget.Database.where((dynamic user) { // Explicitly define `user` type as `dynamic`
+        // Ensure the user is a friend
+        bool isFriend = currentUser['friends'].contains(user['userid']);
+
+        // Check if the friend's name matches the query
+        bool matchesSearch = user['name'].toLowerCase().contains(query.toLowerCase());
+
+        // Check if any gift name in any event contains the search query
+        bool hasMatchingGift = (user['events'] as List<dynamic>?)?.any((event) {
+          return (event['gifts'] as List<dynamic>?)?.any((gift) {
+            return gift['giftName'].toLowerCase().contains(query.toLowerCase());
+          }) ?? false;
+        }) ?? false;
+
+        return isFriend && (matchesSearch || hasMatchingGift);
+      }).toList();
+    });
+  }
+
+
+
+  // Function to show the dialog for adding a friend
   void _showAddFriendDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -32,8 +84,8 @@ class HomePage extends StatelessWidget {
                 leading: Icon(Icons.phone),
                 title: Text("Add Manually"),
                 onTap: () {
-                  // Add your manual friend adding logic here
-                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(); // Close the current dialog
+                  _showPhoneNumberDialog(context); // Show the phone number input dialog
                 },
               ),
               ListTile(
@@ -41,7 +93,7 @@ class HomePage extends StatelessWidget {
                 title: Text("Add from Contacts"),
                 onTap: () {
                   // Add your contacts selection logic here
-                  Navigator.of(context).pop();
+                  Navigator.of(context).pop(); // Close the current dialog
                 },
               ),
             ],
@@ -51,17 +103,98 @@ class HomePage extends StatelessWidget {
     );
   }
 
+
+// Function to show dialog for inputting phone number
+  void _showPhoneNumberDialog(BuildContext context) {
+    final TextEditingController phoneController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Enter Phone Number"),
+          content: TextField(
+            controller: phoneController,
+            decoration: InputDecoration(hintText: "Phone number"),
+            keyboardType: TextInputType.phone,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                String phoneNumber = phoneController.text.trim();
+
+                if (phoneNumber.isNotEmpty) {
+                  _addFriendByPhoneNumber(phoneNumber); // Add friend by phone number
+                }
+
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text("Add Friend"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+// Function to add a friend by phone number
+  void _addFriendByPhoneNumber(String phoneNumber) {
+    print("Attempting to add friend by phone number: $phoneNumber");
+
+    // Retrieve current user
+    var currentUser = widget.Database.firstWhere(
+          (user) => user['userid'] == widget.userid,
+      orElse: () => {}, // Return empty map if user is not found
+    );
+
+    if (currentUser.isEmpty) {
+      print("Current user not found in the database.");
+      return;
+    }
+
+    // Retrieve potential friend
+    var potentialFriend = widget.Database.firstWhere(
+          (user) => user['phonenumber'] == phoneNumber,
+      orElse: () => {}, // Return empty map if user is not found
+    );
+
+    if (potentialFriend.isEmpty) {
+      print("User with phone number $phoneNumber not found in the database.");
+      return;
+    }
+
+    // Check if the potential friend is already in your friends list
+    List<int> currentUserFriends = List<int>.from(currentUser['friends']);
+    if (currentUserFriends.contains(potentialFriend['userid'])) {
+      print("This user is already your friend.");
+      return;
+    }
+
+    setState(() {
+      // Add each other as friends
+      (currentUser['friends'] as List).add(potentialFriend['userid']);
+      (potentialFriend['friends'] as List).add(currentUser['userid']);
+
+      // Update the friendsList to reflect the change
+      friendsList = widget.Database.where((user) {
+        return currentUser['friends'].contains(user['userid']);
+      }).toList();
+    });
+
+    print("You are now friends with ${potentialFriend['name']}!");
+  }
+
+
+
+
   @override
   Widget build(BuildContext context) {
-    // Find the current user's data
-    var currentUser = this.Database.firstWhere((user) =>
-    user['userid'] == this.userid);
-
-    // Filter the list of friends based on the current user's friends
-    List<Map<String, dynamic>> friendsList = this.Database.where((user) {
-      return currentUser['friends'].contains(user['userid']);
-    }).toList();
-
     return Scaffold(
       body: Stack(
         children: [
@@ -121,9 +254,14 @@ class HomePage extends StatelessWidget {
                     children: [
                       Icon(Icons.search, color: Colors.grey),
                       SizedBox(width: 8),
-                      Text(
-                        'Search friends or gift lists...',
-                        style: TextStyle(color: Colors.grey, fontSize: 16),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search friends or gift lists...',
+                            border: InputBorder.none,
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -139,7 +277,18 @@ class HomePage extends StatelessWidget {
                         label: "Create Your Own Event/List",
                         backgroundColor: Colors.white,
                         textColor: Colors.black,
-                        onTap: () {},
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  CreateEventPage(
+                                    userid: widget.userid,
+                                    Database: widget.Database,
+                                  ),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -150,20 +299,19 @@ class HomePage extends StatelessWidget {
                   child: ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     itemCount: friendsList.length,
-                    // Updated to display only friends
                     itemBuilder: (context, index) {
                       var friend = friendsList[index]; // Get the friend data
                       return FriendCard(
                         name: friend['name'],
                         eventCount: friend['events'].length,
-                        // Calculate event count
                         onTap: () {
-                          // Navigate to the gift list page and pass the clicked friend's data
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => FriendsEventList(
-                                  frienddata: friend), // Pass the friend data
+                              builder: (context) =>
+                                  FriendsEventList(
+                                    frienddata: friend,
+                                  ),
                             ),
                           );
                         },
@@ -186,3 +334,4 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+

@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 class FriendsGiftItem extends StatefulWidget {
   final String giftName;
   final String category;
-  final String imageurl; // Image URL for the avatar
+  final String description;
+  String imageurl; // Image URL for the avatar
+  double price;
   final bool pledged; // Pledge status passed from the parent
   final VoidCallback onPressed;
   // final VoidCallback onLongPress;
@@ -15,6 +17,8 @@ class FriendsGiftItem extends StatefulWidget {
     this.imageurl = '',
     required this.pledged,
     required this.onPressed,
+    required this.price,
+    required this.description,
     // required this.onLongPress,
     required this.onPledgeChanged,
   });
