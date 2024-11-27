@@ -45,10 +45,12 @@ class _PledgedListPageState extends State<PledgedListPage> {
           if (pledgedGiftIds.contains(gift['giftid'])) {
             // Add the gift to the pledged list
             pledgedGifts.add({
+              'giftid':gift['giftid'],
               'giftName': gift['giftName'],
               'imageurl': gift['imageurl'],
               'price': gift['price'],
               'description': gift['description'],
+              'category':gift['category'],
               'eventName': event['eventName'],
               'eventDate': DateTime.parse(event['eventDate']),
               'friendName': friend['name'], // Get the friend's name
@@ -138,29 +140,70 @@ class _PledgedListPageState extends State<PledgedListPage> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            // Modify Button (Pencil Icon as a Circle)
-                            CircleAvatar(
-                              radius: 20.0, // Adjust size as needed
-                              backgroundColor: Colors.grey.shade200, // Light grey background
-                              child: IconButton(
-                                onPressed: () {
-                                  // Leave this blank for now
-                                },
-                                icon: const Icon(
-                                  Icons.edit,
-                                  color: Colors.grey, // Icon color
-                                ),
-                                tooltip: 'Modify',
-                              ),
-                            ),
-
                             // Delete Button (Trash Icon as ElevatedButton)
                             if (!isOverdue)
                               ElevatedButton(
                                 onPressed: () {
-                                  setState(() {
-                                    pledgedGifts.removeAt(index);
-                                  });
+                                  // Show confirmation dialog
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        title: Text('Unpledge Gift'),
+                                        content: Text(
+                                          'Deleting this pledged gift will unpledge it. Are you sure you want to proceed?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.of(context).pop(); // Close the dialog
+                                            },
+                                            child: Text(
+                                              'Cancel',
+                                              style: TextStyle(color: Colors.grey),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              setState(() {
+                                                // Get the gift to be removed
+                                                final giftToRemove = pledgedGifts[index];
+
+                                                // Remove from UI and Database
+                                                pledgedGifts.removeAt(index);
+
+                                                // Update the database
+                                                final user = widget.Database.firstWhere((user) => user['userid'] == widget.userid);
+                                                print("user is $user");
+                                                print("user pledged gifts before ${user['pledgedgifts']}");
+                                                if (user['pledgedgifts'] != null) {
+                                                  print("gift to remove is $giftToRemove");
+                                                  user['pledgedgifts'].remove(giftToRemove['giftid']);
+                                                  print("user pledged gifts after ${user['pledgedgifts']}");
+
+                                                }
+
+                                                for (var event in user['events']) {
+                                                  for (var gift in event['gifts']) {
+                                                    if (gift['giftid'] == giftToRemove['giftid']) {
+                                                      gift['pledged'] = false;
+                                                      break;
+                                                    }
+                                                  }
+                                                }
+                                              });
+
+                                              Navigator.of(context).pop(); // Close the dialog
+                                            },
+                                            child: Text(
+                                              'Delete',
+                                              style: TextStyle(color: Colors.red),
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red.shade50, // Light red background
@@ -171,6 +214,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                                 ),
                                 child: const Icon(Icons.delete),
                               ),
+
 
                           ],
                         ),
