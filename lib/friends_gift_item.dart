@@ -6,6 +6,7 @@ class FriendsGiftItem extends StatefulWidget {
   final String description;
   String imageurl; // Image URL for the avatar
   double price;
+  final bool isButtonEnabled;
   final bool pledged; // Pledge status passed from the parent
   final VoidCallback onPressed;
   // final VoidCallback onLongPress;
@@ -18,6 +19,7 @@ class FriendsGiftItem extends StatefulWidget {
     required this.pledged,
     required this.onPressed,
     required this.price,
+    required this.isButtonEnabled,
     required this.description,
     // required this.onLongPress,
     required this.onPledgeChanged,
@@ -126,6 +128,21 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (widget.pledged)
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Pledged',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),

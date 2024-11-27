@@ -578,22 +578,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           Icons.person,
         ],
         badges: [
-          const MotionBadgeWidget(
-            text: '10+',
-            color: Colors.red,
-          ), // Badge for "Events"
-          const MotionBadgeWidget(
-            text: '10+',
-            color: Colors.red,
-          ), // No badge for "Home"
-          const MotionBadgeWidget(
-            text: '10+',
-            color: Colors.red,
-          ), // No badge for "Profile"
-          const MotionBadgeWidget(
-            text: '10+',
-            color: Colors.red,
-          ), // No badge for "Profile"
         ],
         tabSize: 50,
         tabBarHeight: 55,

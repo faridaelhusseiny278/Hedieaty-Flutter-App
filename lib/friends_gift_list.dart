@@ -6,8 +6,10 @@ import 'friends_gift_details.dart';
 
 class FriendsGiftList extends StatefulWidget {
   final List<Map<String, dynamic>> gifts;
+  final int userid;
+  final List<Map<String, dynamic>> Database;
   final String eventname;
-  FriendsGiftList({required this.gifts, required this.eventname});
+  FriendsGiftList({required this.gifts, required this.eventname,required this.userid, required this.Database});
 
   @override
   _FriendsGiftListState createState() => _FriendsGiftListState();
@@ -18,7 +20,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
   List<Map<String, dynamic>> filteredGifts = [];
   TextEditingController giftNameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
-  String selectedCategory = "Electronics"; // Default value
+  String selectedCategory = "Tech"; // Default value
 
   @override
   void initState() {
@@ -30,14 +32,18 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
   void sortGifts(String criteria) {
     setState(() {
       if (criteria == 'name') {
-        filteredGifts.sort((a, b) => a['name'].compareTo(b['name']));
+        selectedFilter= 'name';
+        filteredGifts.sort((a, b) => a['giftName'].compareTo(b['giftName']));
       } else if (criteria == 'category') {
+        selectedFilter= 'category';
         filteredGifts.sort((a, b) => a['category'].compareTo(b['category']));
       } else if (criteria == 'status') {
+        selectedFilter= 'status';
         filteredGifts.sort((a, b) => (b['pledged'] ? 1 : 0) - (a['pledged'] ? 1 : 0));
       }
     });
   }
+
 
   void _showSortOptions() {
     showModalBottomSheet(
@@ -86,9 +92,48 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
   // Function to handle pledge change
   void _onPledgeChanged(int index, bool pledged) {
     setState(() {
-      filteredGifts[index]['pledged'] = pledged;
+      final gift = filteredGifts[index];
+      final currentUserId = widget.userid;
+
+      if (pledged) {
+        // If pledging, set the gift as pledged by the current user
+        if (!gift['pledged']) {
+          gift['pledged'] = true;
+
+          // Update the user's pledged gifts in the database
+          final user = widget.Database.firstWhere((user) => user['userid'] == currentUserId);
+          if (!user['pledgedgifts'].contains(gift['giftid'])) {
+            user['pledgedgifts'].add(gift['giftid']);
+          }
+        }
+      } else {
+        if (!gift['pledged']) {
+          // If the gift is not pledged, do nothing
+          return;
+        }
+
+        // Check if the current user has pledged this gift
+        final user = widget.Database.firstWhere((user) => user['userid'] == currentUserId);
+        if (user['pledgedgifts'].contains(gift['giftid'])) {
+          // If unpledging a gift pledged by the current user
+          gift['pledged'] = false;
+
+          // Update the user's pledged gifts in the database
+          user['pledgedgifts'].remove(gift['giftid']);
+        } else {
+          // Show a message indicating the user cannot unpledge this gift
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("You cannot unpledge this gift as it was pledged by someone else."),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
     });
   }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -122,13 +167,25 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                           onChanged: (value) {
                             setState(() {
                               filteredGifts = widget.gifts.where((gift) {
-                                return gift[selectedFilter]!
-                                    .toString()
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase());
+                                if (selectedFilter == 'name') {
+                                  return gift['giftName']
+                                      .toString()
+                                      .toLowerCase()
+                                      .contains(value.toLowerCase());
+                                } else if (selectedFilter == 'category') {
+                                  return gift['category']
+                                      .toString()
+                                      .toLowerCase()
+                                      .contains(value.toLowerCase());
+                                } else if (selectedFilter == 'status') {
+                                  final status = gift['pledged'] ? 'pledged' : 'unpledged';
+                                  return status.contains(value.toLowerCase());
+                                }
+                                return false;
                               }).toList();
                             });
                           },
+
                           decoration: InputDecoration(
                             hintText: 'Search gifts...',
                             border: InputBorder.none,
@@ -158,35 +215,47 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                     itemCount: filteredGifts.length,
                     itemBuilder: (context, index) {
                       var gift = filteredGifts[index];
-                      print("gifts are $gift");
-                      return FriendsGiftItem(
-                        giftName: gift['giftName'],
-                        category: gift['category'],
-                        pledged: gift['pledged'],
-                        imageurl: gift['imageurl'],
-                        description: gift['description'],
-                        price: gift['price'],
-                        onPressed: () async {
-                          final updatedGift = await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => FriendsGiftDetails(
-                                gift: gift,
-                              ),
-                            ),
-                          );
-                          if (updatedGift != null) {
-                            setState(() {
-                              filteredGifts[index] = updatedGift;
-                            });
-                          }
-                        },
 
-                        onPledgeChanged: (pledged) => _onPledgeChanged(index, pledged),
+                      // Determine button state and color
+                      final isPledged = gift['pledged'] ?? false;
+                      final pledgedByCurrentUser = gift['pledgedBy'] == widget.userid;
+
+                      // Set item background color
+                      final backgroundColor = isPledged
+                          ? (pledgedByCurrentUser ? Colors.blue.shade100 : Colors.green.shade100)
+                          : Colors.white;
+
+                      return Container(
+                        color: backgroundColor, // Apply background color
+                        child: FriendsGiftItem(
+                          giftName: gift['giftName'],
+                          category: gift['category'],
+                          pledged: isPledged,
+                          imageurl: gift['imageurl'],
+                          description: gift['description'],
+                          price: gift['price'],
+                          isButtonEnabled: !isPledged || pledgedByCurrentUser, // Disable button for other users
+                          onPressed: () async {
+                            final updatedGift = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => FriendsGiftDetails(
+                                  gift: gift,
+                                ),
+                              ),
+                            );
+                            if (updatedGift != null) {
+                              setState(() {
+                                filteredGifts[index] = updatedGift;
+                              });
+                            }
+                          },
+                          onPledgeChanged: (pledged) => _onPledgeChanged(index, pledged),
+                        ),
                       );
                     },
                   ),
-                ),
+                )
               ],
             ),
           ),

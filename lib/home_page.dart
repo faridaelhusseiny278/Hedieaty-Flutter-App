@@ -311,6 +311,8 @@ class _HomePageState extends State<HomePage> {
                               builder: (context) =>
                                   FriendsEventList(
                                     frienddata: friend,
+                                    userid: widget.userid,
+                                    Database: widget.Database
                                   ),
                             ),
                           );

@@ -5,8 +5,10 @@ import 'Event.dart';
 
 class FriendsEventList extends StatefulWidget {
   final Map<String, dynamic> frienddata;
+  final int userid;
+  final List<Map<String, dynamic>> Database;
 
-  FriendsEventList({Key? key, required this.frienddata}) : super(key: key);
+  FriendsEventList({required this.frienddata, required this.userid, required this.Database});
 
   @override
   _FriendsEventListState createState() => _FriendsEventListState();
@@ -138,7 +140,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FriendsGiftList(gifts: event.gifts,eventname:event.name),
+              builder: (context) => FriendsGiftList(gifts: event.gifts,eventname:event.name, userid: widget.userid, Database: widget.Database),
             ),
           );
         },
