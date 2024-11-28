@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import 'database.dart';
 class PledgedListPage extends StatefulWidget {
   final int userid;
-  final List<Map<String, dynamic>> Database;
-  PledgedListPage({required this.userid, required this.Database});
+  DatabaseService dbService = DatabaseService();
+  PledgedListPage({required this.userid, required this.dbService});
 
   @override
   _PledgedListPageState createState() => _PledgedListPageState();

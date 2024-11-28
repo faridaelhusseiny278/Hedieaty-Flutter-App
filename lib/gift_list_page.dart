@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:hedieatyfinalproject/friends_gift_details.dart';
-
+// import 'package:hedieatyfinalproject/friends_gift_details.dart';
 import 'gift_details_page.dart';
+import 'database.dart';
 import 'gift_item.dart';
 import 'Event.dart';
 class GiftListPage extends StatefulWidget {
-  final Event event;
-  GiftListPage({required this.event});
+  final int eventid;
+  GiftListPage({required this.eventid});
 
   @override
   _GiftListPage createState() => _GiftListPage();
 }
 
 class _GiftListPage extends State<GiftListPage> {
-  String selectedFilter = 'giftName'; // Default filter is gift name
+  DatabaseService dbService = DatabaseService();
+  String selectedFilter = 'name'; // Default filter is gift name
   List<Map<String, dynamic>> filteredGifts = [];
+  List<Map<String, dynamic>> allGifts = [];
   TextEditingController giftNameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
   String selectedCategory = "Tech"; // Default value
@@ -22,19 +24,48 @@ class _GiftListPage extends State<GiftListPage> {
   @override
   void initState() {
     super.initState();
-    filteredGifts = List.from(widget.event.gifts); // Initialize with all gifts
+    //loop on all gifts and add them to the filteredGifts list if the event id is the same as the event id of the current event
+    dbService.readData("SELECT * from Gifts").then((value) {
+      value.forEach((element) {
+        if (element['eventID'] == widget.eventid) {
+          print("element is $element");
+          setState(() {
+            filteredGifts.add(element);
+            print("filtered gifts in init is $filteredGifts");
+            allGifts.add(element);
+          });
+        }
+      });
+    });
+  }
+  // get the event name from the database by the event id
+  Future<String> getEventName() async {
+    List<Map> Response = await dbService.readData("SELECT * from Events");
+    for (int i = 0; i < Response.length; i++) {
+      if (Response[i]['ID'] == widget.eventid) {
+        return Response[i]['name'];
+      }
+    }
+    return "";
   }
 
   // Sort gifts by selected criteria
   void sortGifts(String criteria) {
     setState(() {
       if (criteria == 'name') {
-        filteredGifts.sort((a, b) => a['giftName'].compareTo(b['giftName']));
+        filteredGifts.sort((a, b) => a['name'].compareTo(b['name']));
       } else if (criteria == 'category') {
         filteredGifts.sort((a, b) => a['category'].compareTo(b['category']));
       } else if (criteria == 'status') {
-        filteredGifts.sort((a, b) => (b['pledged'] ? 1 : 0) - (a['pledged'] ? 1 : 0));
+        // Ensure status is properly handled
+        filteredGifts.sort((a, b) {
+          int aStatus = (a['status'] is bool) ? (a['status'] ? 1 : 0) : (a['status'] as int);
+          int bStatus = (b['status'] is bool) ? (b['status'] ? 1 : 0) : (b['status'] as int);
+
+          return bStatus - aStatus;
+        });
       }
+
     });
   }
 
@@ -111,13 +142,13 @@ class _GiftListPage extends State<GiftListPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
+                      // remove the gift from the event's gifts in the database
+                      Map<String, dynamic> giftToRemove = filteredGifts[index];
+                      await dbService.deleteGiftsForUser(giftToRemove['id']);
                       setState(() {
                         // Remove the gift from the filtered list
-                        Map<String, dynamic> giftToRemove = filteredGifts[index];
                         filteredGifts.removeAt(index);
-                        // Also remove the gift from the event's gifts in the database
-                        widget.event.gifts.removeWhere((gift) => gift == giftToRemove);
                       });
                       Navigator.of(context).pop(); // Close bottom sheet
                     },
@@ -148,9 +179,22 @@ class _GiftListPage extends State<GiftListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.event.name),
-        backgroundColor: Colors.deepPurple,
+      title: FutureBuilder<String>(
+        future: getEventName(), // Call your async function here
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Text('Loading...'); // Show loading text while waiting
+          } else if (snapshot.hasError) {
+            return Text('Error: ${snapshot.error}'); // Handle error if any
+          } else if (snapshot.hasData) {
+            return Text("${snapshot.data} Gifts" ?? ''); // Display event name when data is available
+          } else {
+            return Text('No data found');
+          }
+        },
       ),
+        backgroundColor: Colors.deepPurple,
+    ),
       body: Stack(
         children: [
           Padding(
@@ -175,12 +219,12 @@ class _GiftListPage extends State<GiftListPage> {
                         child: TextField(
                           onChanged: (value) {
                             setState(() {
-                              filteredGifts = widget.event.gifts.where((gift) {
-                                return gift[selectedFilter]!
-                                    .toString()
-                                    .toLowerCase()
-                                    .contains(value.toLowerCase());
-                              }).toList();
+                              filteredGifts = allGifts
+                                  .where((element) => element[selectedFilter]
+                                      .toString()
+                                      .toLowerCase()
+                                      .contains(value.toLowerCase()))
+                                  .toList();
                             });
                           },
                           decoration: InputDecoration(
@@ -197,17 +241,14 @@ class _GiftListPage extends State<GiftListPage> {
                         },
                         itemBuilder: (context) => [
                           PopupMenuItem(
-                            value: 'giftName',
+                            value: 'name',
                             child: Text('Name'),
                           ),
                           PopupMenuItem(
                             value: 'category',
                             child: Text('Category'),
                           ),
-                          PopupMenuItem(
-                            value: 'pledged',
-                            child: Text('Status'),
-                          ),
+
                         ],
                         icon: Icon(Icons.filter_list, color: Colors.grey),
                       ),
@@ -238,22 +279,27 @@ class _GiftListPage extends State<GiftListPage> {
                           MaterialPageRoute(
                             builder: (context) => GiftDetailsPage(
                               giftDetails: {
-                                'giftName': '',
+                                'name': '',
                                 'category': selectedCategory, // Default category
                                 'description': '',
-                                'pledged': false, // Default pledge status
-                                'imageurl': ''
+                                'status': false, // Default pledge status
+                                'imageurl': '',
+                                'price': ''
                               },
                             ),
                           ),
                         );
-                        print("updated gift is $updatedGift");
                         // Check if the updated gift is not null
                         if (updatedGift != null) {
+                          updatedGift['eventID'] = widget.eventid;
+                          int id = await dbService.addGiftForUser(updatedGift);
                           // Add the new or updated gift to the list
+                          updatedGift['ID'] = id;
                           setState(() {
-                            widget.event.gifts.add(updatedGift);
-                            filteredGifts = List.from(widget.event.gifts);
+                            filteredGifts.add(updatedGift);
+                            allGifts.add(updatedGift);
+                            print("filteredGifts: $filteredGifts");
+
                           });
                         }
                       },
@@ -274,11 +320,14 @@ class _GiftListPage extends State<GiftListPage> {
                     itemCount: filteredGifts.length,
                     itemBuilder: (context, index) {
                       var gift = filteredGifts[index];
+                      print("gift is $gift");
+
                       return GiftItem(
-                        giftName: gift['giftName'],
+                        ID: gift['ID'],
+                        giftName: gift['name'],
                         category: gift['category'],
-                        pledged: gift['pledged'],
-                        imageurl: gift['imageurl'],
+                          status: (gift['status'] == 0 || gift['status'] == false) ? false : true,
+                          imageurl: gift['imageurl'],
                         price: gift['price'],
                         description: gift['description'],
                         onPressed: () async {
@@ -292,9 +341,12 @@ class _GiftListPage extends State<GiftListPage> {
                           );
 
                           if (updatedGift != null) {
+                            print("Gift ID: ${gift['ID']}");
+                            await dbService.updateGiftForUser(updatedGift, gift['ID']);
                             setState(() {
                               filteredGifts[index] = updatedGift;
-                              widget.event.gifts[index]= updatedGift;
+                              allGifts[index] = updatedGift;
+                              print("filteredGifts index: ${filteredGifts[index]}");
                             });
                           }
                         },

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 class GiftItem extends StatefulWidget {
+  final int ID;
   final String giftName;
   final String category;
-  final bool pledged;
+  final bool status;
   final String description;
   String imageurl; // Image URL for the avatar
   double price;
@@ -11,9 +12,10 @@ class GiftItem extends StatefulWidget {
   final VoidCallback onLongPress;
 
   GiftItem({
+   required this.ID,
     required this.giftName,
     required this.category,
-    required this.pledged,
+    required this.status,
     this.imageurl = '',
     required this.price,
     required this.description,
@@ -76,7 +78,7 @@ class _GiftItemState extends State<GiftItem> {
         child: Container(
           padding: EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: widget.pledged ? Colors.green[100] : Colors.white,
+            color: widget.status ? Colors.green[100] : Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -93,11 +95,11 @@ class _GiftItemState extends State<GiftItem> {
                   },
                 )
               else
-                // CircleAvatar(
-                //   backgroundColor: Colors.grey, // Fallback color for invalid URL
-                //   radius: 40,
-                // ),
-              SizedBox(width: 16), // Spacing for the avatar
+              // CircleAvatar(
+              //   backgroundColor: Colors.grey, // Fallback color for invalid URL
+              //   radius: 40,
+              // ),
+                SizedBox(width: 16), // Spacing for the avatar
               // Main gift information
               Expanded(
                 child: Column(
@@ -111,7 +113,7 @@ class _GiftItemState extends State<GiftItem> {
                       widget.category,
                       style: TextStyle(fontSize: 14),
                     ),
-                    if (widget.pledged)
+                    if (widget.status)
                       Container(
                         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(

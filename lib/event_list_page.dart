@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hedieatyfinalproject/gift_list_page.dart';
+import 'package:hedieatyfinalproject/database.dart';
+import 'gift_list_page.dart';
 import 'package:intl/intl.dart';
 import 'Event.dart';
+import 'database.dart';
 
 class EventListPage extends StatefulWidget {
   final int userid;
-  final List<Map<String, dynamic>> Database;
-  EventListPage({required this.userid, required this.Database});
+  DatabaseService db = DatabaseService();
+  EventListPage({required this.userid, required this.db});
 
   @override
   _CalendarPageState createState() => _CalendarPageState();
@@ -30,34 +32,28 @@ class _CalendarPageState extends State<EventListPage> {
   final ScrollController _scrollController = ScrollController();
 
   List<Event> selectedEvents = [];
-  late List<Event> events;
+  late List<Event> events=[];
 
   @override
   void initState() {
     super.initState();
 
-    // Filter user data based on userid
-    final userData = widget.Database.firstWhere(
-          (user) => user['userid'] == widget.userid,
-      orElse: () => {}, // Return null if no user is found
-    );
-
-    // Check if userData is found
+    final userData = widget.db.getUserById(widget.userid);
     if (userData != null) {
-      events = (userData['events'] as List).map((eventData) {
-        return Event(
-          name: eventData['eventName'],
-          category: eventData['category'],
-          status: eventData['Status'],
-          date: DateTime.parse(eventData['eventDate']),
-          location: eventData['eventLocation'],
-          gifts: eventData['gifts'],
-        );
-      }).toList();
-    } else {
-      // If no user data is found, initialize an empty list of events
-      events = [];
+      _initializeEvents();
     }
+  }
+  Future<void> _initializeEvents() async {
+    // Fetch events asynchronously
+    final fetchedEvents = await widget.db.getAllEventsForUser(widget.userid);
+    // print id of each event
+    fetchedEvents.forEach((element) {
+    });
+
+    // Update the events variable
+    setState(() {
+      events = fetchedEvents;
+    });
   }
 
   void _toggleSelectAll(bool value) {
@@ -89,55 +85,46 @@ class _CalendarPageState extends State<EventListPage> {
     });
   }
 
-  void _addOrEditEvent({Event? event}) {
+  void _addOrEditEvent({Event? event}) async {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => EventForm(
         event: event,
-        onSave: (newEvent) {
-          setState(() {
-            if (event == null) {
-              // Adding a new event
-              events.add(newEvent);
+        onSave: (newEvent) async {
+          // Perform asynchronous work outside of setState
+          if (event == null) {
+            // Adding a new event
+            int eventId = await widget.db.addEventForUser(widget.userid, newEvent);
+            if (eventId > 0) {
+              // Set the generated ID from the database
+              newEvent.id = eventId;
 
-              // Add the new event to the database as well
-              final userIndex = widget.Database.indexWhere((user) => user['userid'] == widget.userid);
-              if (userIndex != -1) {
-                widget.Database[userIndex]['events'].add({
-                  'eventName': newEvent.name,
-                  'category': newEvent.category,
-                  'Status': newEvent.status,
-                  'eventDate': newEvent.date.toIso8601String(),
-                  'eventLocation': newEvent.location,
-                  'gifts': newEvent.gifts,
-                });
-              }
+              // Update the local list
+              setState(() {
+                events.add(newEvent);
+              });
             } else {
-              // Modifying an existing event
-              int index = events.indexOf(event);
-              events[index] = newEvent;
-
-              // Update the event in the database as well
-              final userIndex = widget.Database.indexWhere((user) => user['userid'] == widget.userid);
-              if (userIndex != -1) {
-                final userEvents = widget.Database[userIndex]['events'] as List;
-
-                // Find the index of the event to modify
-                final eventIndex = userEvents.indexWhere((eventData) => eventData['eventName'] == event.name);
-                if (eventIndex != -1) {
-                  userEvents[eventIndex] = {
-                    'eventName': newEvent.name,
-                    'category': newEvent.category,
-                    'Status': newEvent.status,
-                    'eventDate': newEvent.date.toIso8601String(),
-                    'eventLocation': newEvent.location,
-                    'gifts': newEvent.gifts,
-                  };
-                }
-              }
+              print("Error adding event to the database.");
             }
-          });
+          }
+          else {
+            // Modifying an existing event
+            int index = events.indexOf(event);
+            events[index] = newEvent;
+
+            // Update the event in the database
+            await widget.db.updateEventForUser(widget.userid, newEvent);
+
+              print("Event updated successfully.");
+
+            // Update the local list synchronously after the operation is complete
+            setState(() {
+              events[index] = newEvent;
+            });
+          }
+
+          // Close the modal bottom sheet
           Navigator.pop(context);
         },
       ),
@@ -145,31 +132,23 @@ class _CalendarPageState extends State<EventListPage> {
   }
 
 
-  void _deleteSelectedEvents() {
-    setState(() {
-      // Remove selected events from the UI events list
-      events.removeWhere((event) => selectedEvents.contains(event));
 
-      // Remove selected events from the user's events in the widget.Database
-      final userIndex = widget.Database.indexWhere((user) => user['userid'] == widget.userid);
-      if (userIndex != -1) {
-        final userData = widget.Database[userIndex];
-        final userEvents = userData['events'] as List;
+  void _deleteSelectedEvents() async {
+    // Remove selected events from the database
+    await widget.db.deleteEventsForUser(widget.userid, selectedEvents);
 
-        // Remove the selected events from the user's events list
-        userEvents.removeWhere((eventData) =>
-            selectedEvents.any((event) => eventData['eventName'] == event.name)
-        );
 
-        // Update the database with the new events list
-        widget.Database[userIndex]['events'] = userEvents;
-      }
+      setState(() {
+        // Remove selected events from the UI events list
+        events.removeWhere((event) => selectedEvents.contains(event));
 
-      // Clear the selected events and reset selectAll flag
-      selectedEvents.clear();
-      selectAll = false;
-    });
+        // Clear the selected events and reset selectAll flag
+        selectedEvents.clear();
+        selectAll = false;
+      });
+
   }
+
 
 
   @override
@@ -254,11 +233,10 @@ class _CalendarPageState extends State<EventListPage> {
       child: InkWell(
         onTap: () {
           _toggleEventSelection(event);
-          print("event gifts is ${event.gifts}");
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => GiftListPage(event: event),
+              builder: (context) => GiftListPage(eventid: event.id!),
             ),
           );
         },
@@ -566,12 +544,13 @@ class _EventFormState extends State<EventForm> {
               onPressed: () {
                 if (_formKey.currentState!.validate()) {
                   final newEvent = Event(
+                    id: widget.event?.id,
                     name: _nameController.text,
                     category: _categoryController.text,
                     status: _statusController.text,
                     date: _selectedDate ?? DateTime.now(),
                     location: _locationController.text,
-                    gifts: [],
+                    description: '',
                   );
                   widget.onSave(newEvent);
                 }
@@ -583,4 +562,3 @@ class _EventFormState extends State<EventForm> {
     );
   }
 }
-

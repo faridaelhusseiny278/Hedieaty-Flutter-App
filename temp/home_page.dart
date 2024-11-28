@@ -5,6 +5,7 @@ import 'friend_card.dart';
 import 'friends_event_list.dart';
 import 'event_list_page.dart';
 import 'createEvent.dart';
+import 'database.dart';
 class Friend {
   final String name;
   final int eventCount;
@@ -15,8 +16,9 @@ class Friend {
 
 class HomePage extends StatefulWidget {
   final int userid;
-  final List<Map<String, dynamic>> Database;
-  HomePage({required this.userid, required this.Database});
+  DatabaseService dbService = DatabaseService();
+
+  HomePage({required this.userid, required this.dbService});
 
   @override
   State<HomePage> createState() => _HomePageState();

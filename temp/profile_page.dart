@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'my_pledged_gifts_page.dart';
+import 'database.dart';
 class ProfilePage extends StatefulWidget {
   final int userid;
-  final List<Map<String, dynamic>> Database;
-  ProfilePage({required this.userid, required this.Database});
+  DatabaseService dbService = DatabaseService();
+  ProfilePage({required this.userid, required this.dbService});
 
   @override
   _ProfilePageState createState() => _ProfilePageState();

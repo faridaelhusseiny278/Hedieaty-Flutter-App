@@ -1,17 +1,30 @@
 class Event {
+   int? id;
   final String name;
   final String category;
-  final String status;
   final DateTime date;
+  final String status;
   final String location;
-  final List<Map<String, dynamic>> gifts;
+  final String description;
 
   Event({
+     this.id,
     required this.name,
-    required this.category,
     required this.status,
+    required this.category,
     required this.date,
     required this.location,
-    required this.gifts
+    required this.description,
   });
+  factory Event.fromMap(Map<String, dynamic> map) {
+    return Event(
+      id: map['ID'],
+      name: map['name'],
+      status: map['status'],
+      description: map['description'],
+      category: map['category'],
+      date: DateTime.parse(map['date']),
+      location: map['location']
+    );
+  }
 }
