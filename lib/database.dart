@@ -74,6 +74,14 @@ class DatabaseService {
           FOREIGN KEY(userID) REFERENCES Users(ID),
           FOREIGN KEY(friendID) REFERENCES Users(ID)
         )''');
+
+        await db.execute('''CREATE TABLE Pledges (
+          giftID INTEGER,
+          userID INTEGER,
+          FOREIGN KEY(giftID) REFERENCES Gifts(ID),
+          FOREIGN KEY(userID) REFERENCES Users(ID)
+        )''');
+
         // Insert users
         String insertUsersSQL = ''' 
     INSERT INTO Users (ID, name, phonenumber, email, address, preferences) 
@@ -123,7 +131,7 @@ class DatabaseService {
       (14, 'Christmas Tree Decoration Set', 'Home', FALSE, 'https://example.com/christmasdecorations.jpg', 30.0, 'A complete set of decorations for the perfect Christmas tree.', 10),
       (15, 'Party Supplies', 'Event', FALSE, 'https://example.com/partysupplies.jpg', 50.0, 'A complete set of party supplies including balloons, decorations, and tableware, perfect for hosting a fun and memorable event.', 11),
       (4, 'Laptop', 'Tech', TRUE, 'https://example.com/laptop.jpg', 1000.0, 'A powerful laptop for all my work and play needs.', 3),
-      (5, 'Camera', 'Tech', FALSE, 'https://example.com/camera.jpg', 500.0, 'A high-quality digital camera that captures stunning photos and videos.', 3),
+      (5, 'Camera', 'Tech', TRUE, 'https://example.com/camera.jpg', 500.0, 'A high-quality digital camera that captures stunning photos and videos.', 3),
       (16, 'Smart Home Speaker', 'Tech', FALSE, 'https://example.com/smartspeaker.jpg', 150.0, 'A cutting-edge smart speaker that integrates seamlessly with my home.', 14),
       (17, 'Home Decor Set', 'Home', FALSE, 'https://example.com/homedecor.jpg', 75.0, 'A stylish and elegant home decor set that includes decorative items such as candles, vases, and throw pillows.', 14),
       (18, 'Teddy Bear', 'Toys', FALSE, 'https://example.com/giftcard.jpg', 50.0, 'A soft and cuddly teddy bear made from plush fabric.', 15),
@@ -139,23 +147,40 @@ class DatabaseService {
 
         await db.execute(insertGiftsSQL);
 
+
+
         // Insert friendships between users
         String insertFriendsSQL = '''
     INSERT INTO Friends (userID, friendID)
     VALUES
-      (1, 2), (1, 3), (1, 6), (1, 5), (1, 4),
-      (2, 3), (2, 6), (2, 5), (2, 4), (2, 8),
-      (3, 4), (3, 6), (3, 8),
-      (4, 5), (4, 6), (4, 8),
-      (5, 6), (5, 8)
+      (1, 2), (1, 3), (1, 6), (1, 5),
+      (2, 3), (2, 6), (2, 5), (2, 4), 
+      (3, 4), (3, 6), 
+      (4, 5), (4, 6), 
+      (5, 6)
   ''';
         await db.execute(insertFriendsSQL);
 
+
+
+        String insertPledgesSQL = '''
+        INSERT INTO Pledges (giftID, userID)
+        VALUES
+        -- Alice's pledges
+          (1, 2), -- Bob pledges to gift Alice a Smartwatch
+        (2, 3), -- Charlie pledges to gift Alice a Fitness Tracker
+        -- Bob's pledges
+        (4, 1), -- Alice pledges to gift Bob a Laptop
+        (5, 3), -- Charlie pledges to gift Bob a Camera
+        -- Charlie's pledges
+        (6, 4) -- David pledges to gift Charlie a Wine Glass Set
+        -- David's pledges
+ ''' ;
+        await db.execute(insertPledgesSQL);
         print("Sample data inserted successfully!");
 
 
-
-      },
+        },
     );
   }
 
@@ -192,15 +217,6 @@ class DatabaseService {
   // Add event for user
   Future<int> addEventForUser(int userId, Event event) async {
     Database myData = await db;
-    Map<String, dynamic> eventData = {
-      'name': event.name,
-      'category': event.category,
-      'date': event.date.toString(),
-      'location': event.location,
-      'description': event.description,
-      'status': event.status,
-      'userID': userId,
-    };
 
     return await myData.rawInsert("INSERT INTO Events (name, category, date, location, description, status, userID) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [event.name, event.category, event.date.toString(), event.location, event.description, event.status, userId]);
@@ -216,6 +232,12 @@ class DatabaseService {
     var result = await myData.rawQuery('SELECT * FROM Gifts');
     print("result after insert is $result");
     return id;
+  }
+  // check if the 2 users are friends
+  Future<bool> areFriends(int userId, int friendId) async {
+    Database myData = await db;
+    var result = await myData.rawQuery('SELECT * FROM Friends WHERE userID = $userId AND friendID = $friendId');
+    return result.isNotEmpty;
   }
 
   // Update event for user
@@ -259,7 +281,57 @@ class DatabaseService {
     var result = await myData.rawQuery('SELECT * FROM Gifts WHERE ID = $giftid');
     print("result after update is $result");
   }
+//get user friends by user id
+  Future<List<Map<String, dynamic>>> getUserFriendsIDs(int userId) async {
+    Database myData = await db;
+    return await myData.rawQuery('SELECT * FROM Friends WHERE userID = $userId OR friendID = $userId');
+  }
 
+  //get gifts for event by event id
+  Future<List<Map<String, dynamic>>> getGiftsForEvent(int eventId) async {
+    Database myData = await db;
+    return await myData.rawQuery('SELECT * FROM Gifts WHERE eventID = $eventId');
+  }
+  Future<Map<String, dynamic>?> getUserByPhoneNumber(String phoneNumber) async {
+    Database myData = await db;
+    var result = await myData.rawQuery('SELECT * FROM Users WHERE phoneNumber = ?', [phoneNumber]);
+    return result.isNotEmpty ? result.first : null;
+  }
+  Future<void> addFriend(int userId, int friendId) async {
+    Database myData = await db;
+    await myData.rawInsert(
+      'INSERT INTO Friends (userID, friendID) VALUES (?, ?)',
+      [userId, friendId],
+    );
+  }
+  // update gift status
+  Future<void> updateGiftStatus(int giftId, bool status, int userid) async {
+    Database myData = await db;
+    print("im in update gift status");
+
+    await myData.rawUpdate('UPDATE Gifts SET status = ? WHERE ID = ?', [status==true? 1:0, giftId]);
+    var result = await myData.rawQuery('SELECT * FROM Gifts WHERE ID = $giftId');
+    print("result after update is $result");
+    if (status) {
+      print("status is $status");
+      await myData.rawInsert('INSERT INTO Pledges (giftID, userID) VALUES (?, ?)', [giftId, userid]);
+    } else {
+      print("status is $status");
+      await myData.rawDelete('DELETE FROM Pledges WHERE giftID = $giftId AND userID = $userid');
+    }
+    var pledges = await myData.rawQuery('SELECT * FROM Pledges');
+    print("pledges after update is $pledges");
+    for (var pledge in pledges) {
+      print(pledge);
+    }
+  }
+
+  // get event count for user
+  Future<int> getEventCountForUser(int userId) async {
+    Database myData = await db;
+    var result = await myData.rawQuery('SELECT COUNT(*) FROM Events WHERE userID = $userId');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
 
 
   // Delete events for user
@@ -283,5 +355,29 @@ class DatabaseService {
     var result = await myData.rawQuery('SELECT * FROM Events WHERE userID = $userId');
     return result.map((event) => Event.fromMap(event)).toList();
   }
+//   get events for user (dont return an object)
+  Future<List<Map<String, dynamic>>> getEventsForUser(int userId) async {
+    Database myData = await db;
+    return await myData.rawQuery('SELECT * FROM Events WHERE userID = $userId');
+  }
+//   check if user id has pledged a gift id
+
+    Future<bool> hasPledgedGift(int userId, int giftId) async {
+    Database myData = await db;
+    var result = await myData.rawQuery('SELECT * FROM Pledges WHERE userID = $userId AND giftID = $giftId');
+    // print all pledges
+    var pledges = await myData.rawQuery('SELECT * FROM Pledges');
+    print("pledges in has pledged gift is");
+    for (var pledge in pledges) {
+      print(pledge);
+    }
+
+    return result.isNotEmpty;
+    }
+//     create a table to delete a pledge
+    Future<void> deletePledge(int userId, int giftId) async {
+    Database myData = await db;
+    await myData.rawQuery('DELETE FROM Pledges WHERE userID = $userId AND giftID = $giftId');
+    }
 
 }

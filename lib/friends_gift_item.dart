@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 
 class FriendsGiftItem extends StatefulWidget {
-  final String giftName;
+  final String name;
   final String category;
   final String description;
   String imageurl; // Image URL for the avatar
   double price;
   final bool isButtonEnabled;
-  final bool pledged; // Pledge status passed from the parent
+  final bool status; // Pledge status passed from the parent
   final VoidCallback onPressed;
   // final VoidCallback onLongPress;
   final ValueChanged<bool> onPledgeChanged; // Callback to notify when pledge status changes
 
   FriendsGiftItem({
-    required this.giftName,
+    required this.name,
     required this.category,
     this.imageurl = '',
-    required this.pledged,
+    required this.status,
     required this.onPressed,
     required this.price,
     required this.isButtonEnabled,
@@ -110,7 +110,7 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.giftName,
+                        widget.name,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -128,7 +128,7 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (widget.pledged)
+                      if (widget.status)
                         Container(
                           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -150,10 +150,11 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
                 // Pledge button
                 ElevatedButton(
                   onPressed: () {
-                    widget.onPledgeChanged(!widget.pledged);
+                    print("Pledge button pressed, status: ${widget.status}");
+                    widget.onPledgeChanged(!widget.status);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.pledged ? Colors.green : Colors.white70, // Use backgroundColor
+                    backgroundColor: widget.status ? Colors.green : Colors.white70, // Use backgroundColor
                     foregroundColor: Colors.white, // Use foregroundColor
                     elevation: 3,
                     shadowColor: Colors.black26,
@@ -163,7 +164,7 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   ),
                   child: Text(
-                    widget.pledged ? 'Pledged' : 'Pledge',
+                    (widget.status==1 || widget.status== true) ? 'Pledged' : 'Pledge',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

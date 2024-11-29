@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/database.dart';
 import 'package:intl/intl.dart';
 import 'friends_gift_list.dart';
 import 'Event.dart';
@@ -6,9 +7,9 @@ import 'Event.dart';
 class FriendsEventList extends StatefulWidget {
   final Map<String, dynamic> frienddata;
   final int userid;
-  final List<Map<String, dynamic>> Database;
+  DatabaseService dbService = DatabaseService();
 
-  FriendsEventList({required this.frienddata, required this.userid, required this.Database});
+  FriendsEventList({required this.frienddata, required this.userid, required this.dbService});
 
   @override
   _FriendsEventListState createState() => _FriendsEventListState();
@@ -17,23 +18,23 @@ class FriendsEventList extends StatefulWidget {
 class _FriendsEventListState extends State<FriendsEventList> {
   bool selectAll = false;
   final ScrollController _scrollController = ScrollController();
-
+  bool isLoading = true;
   List<Event> selectedEvents = [];
   late List<Event> events;
 
   @override
   void initState() {
     super.initState();
-    events = (widget.frienddata['events'] as List).map((eventData) {
-      return Event(
-        name: eventData['eventName'],
-        category: eventData['category'],
-        status: eventData['Status'],
-        date: DateTime.parse(eventData['eventDate']),
-        location: eventData['eventLocation'],
-        gifts: eventData['gifts']
-      );
-    }).toList();
+    _loadEvents();
+
+  }
+  void _loadEvents() async{
+    await widget.dbService.getAllEventsForUser(widget.frienddata['ID']).then((value) {
+      setState(() {
+        events = value;
+        isLoading = false;
+      });
+    });
   }
 
   void _toggleSelectAll(bool value) {
@@ -67,6 +68,10 @@ class _FriendsEventListState extends State<FriendsEventList> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      // Show loading indicator while data is loading
+      return Center(child: CircularProgressIndicator());
+    }
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
@@ -136,11 +141,10 @@ class _FriendsEventListState extends State<FriendsEventList> {
       child: InkWell(
         onTap: () {
           _toggleEventSelection(event);
-          print("event gifts is ${event.gifts}");
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FriendsGiftList(gifts: event.gifts,eventname:event.name, userid: widget.userid, Database: widget.Database),
+              builder: (context) => FriendsGiftList(event: event ,userid: widget.userid, dbService: widget.dbService, friendid: widget.frienddata['ID'],),
             ),
           );
         },

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:hedieatyfinalproject/friends_event_list.dart';
+// import 'package:hedieatyfinalproject/friends_event_list.dart';
 import 'rounded_button.dart';
 import 'friend_card.dart';
 import 'friends_event_list.dart';
-import 'event_list_page.dart';
+// import 'event_list_page.dart';
 import 'createEvent.dart';
 import 'database.dart';
+import 'dart:async';
 class Friend {
   final String name;
   final int eventCount;
@@ -26,49 +27,99 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   TextEditingController _searchController = TextEditingController();
-  late List<Map<String, dynamic>> friendsList;
+  late List<Map<String, dynamic>> friendsList=[];
+  Map<String, dynamic>? currentUser;
+  bool isLoading = true;
+  Map<int, int> eventCounts = {};
+  late List<Map<String, dynamic>> filteredFriendsList = [];
+  Timer? _debounce;
+
 
 
   @override
   void initState() {
+    print("in init state of home page now!");
     super.initState();
-    // Initialize the friends list on page load based on the current user's data
-    var currentUser = widget.Database.firstWhere((user) =>
-    user['userid'] == widget.userid);
+    _loadFriendsList();
 
-    friendsList = widget.Database.where((user) {
-      return currentUser['friends'].contains(user['userid']);
-    }).toList();
-
-    // Add listener to search controller
     _searchController.addListener(() {
-      _filterFriendsList(_searchController.text);
+      if (_debounce?.isActive ?? false) _debounce?.cancel();
+      _debounce = Timer(const Duration(milliseconds: 200), () {
+        _filterFriendsList(_searchController.text);
+      });
     });
   }
 
-  void _filterFriendsList(String query) {
-    var currentUser = widget.Database.firstWhere(
-            (user) => user['userid'] == widget.userid);
+  Future<void> _loadFriendsList() async {
+    var friendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
+
+    // Clear friends list before adding new ones to avoid duplicates
+    friendsList.clear();
+    filteredFriendsList.clear();
+
+    for (var friend in friendsIds) {
+      var friendData = await widget.dbService.getUserById(friend['friendID']);
+      friendsList.add(friendData!);
+
+      var eventcount = await widget.dbService.getEventCountForUser(friendData['ID']);
+      eventCounts[friendData['ID']] = eventcount;
+    }
 
     setState(() {
-      friendsList = widget.Database.where((dynamic user) { // Explicitly define `user` type as `dynamic`
-        // Ensure the user is a friend
-        bool isFriend = currentUser['friends'].contains(user['userid']);
-
-        // Check if the friend's name matches the query
-        bool matchesSearch = user['name'].toLowerCase().contains(query.toLowerCase());
-
-        // Check if any gift name in any event contains the search query
-        bool hasMatchingGift = (user['events'] as List<dynamic>?)?.any((event) {
-          return (event['gifts'] as List<dynamic>?)?.any((gift) {
-            return gift['giftName'].toLowerCase().contains(query.toLowerCase());
-          }) ?? false;
-        }) ?? false;
-
-        return isFriend && (matchesSearch || hasMatchingGift);
-      }).toList();
+      filteredFriendsList = List.from(friendsList); // Set filtered list after loading
+      isLoading = false; // Loading completed
     });
   }
+
+
+  void _filterFriendsList(String query) async {
+    var currentUser = (await widget.dbService.getUserById(widget.userid))!;
+
+    // Temporary list to store filtered friends
+    List<Map<String, dynamic>> filteredList = [];
+
+    // When the search query is empty, reset to the original list
+    if (query.isEmpty) {
+      setState(() {
+        filteredFriendsList = List.from(friendsList); // Reset to full list
+      });
+      return;
+    }
+
+    for (var friend in friendsList) {
+      // Ensure the user is a friend
+      bool isFriend = await widget.dbService.areFriends(currentUser['ID'], friend['ID']);
+
+      // Check if the friend's name matches the query
+      bool matchesSearch = friend['name'].toLowerCase().contains(query.toLowerCase());
+
+      // Check if any gift name in any event contains the search query
+      bool hasMatchingGift = false;
+      var events = await widget.dbService.getEventsForUser(friend['ID']);
+      for (var event in events) {
+        var gifts = await widget.dbService.getGiftsForEvent(event['ID']);
+        for (var gift in gifts) {
+          if (gift['name'].toLowerCase().contains(query.toLowerCase())) {
+            hasMatchingGift = true;
+            break;
+          }
+        }
+        if (hasMatchingGift) break;
+      }
+
+      // Add the friend to the filtered list if they meet the criteria
+      if (isFriend && (matchesSearch || hasMatchingGift)) {
+        filteredList.add(friend);
+      }
+    }
+
+    setState(() {
+      filteredFriendsList = filteredList;
+    });
+  }
+
+
+
 
 
 
@@ -145,48 +196,44 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-// Function to add a friend by phone number
-  void _addFriendByPhoneNumber(String phoneNumber) {
+  Future<void> _addFriendByPhoneNumber(String phoneNumber) async {
     print("Attempting to add friend by phone number: $phoneNumber");
 
-    // Retrieve current user
-    var currentUser = widget.Database.firstWhere(
-          (user) => user['userid'] == widget.userid,
-      orElse: () => {}, // Return empty map if user is not found
-    );
+    // Retrieve potential friend by phone number
+    var potentialFriend = await widget.dbService.getUserByPhoneNumber(phoneNumber);
 
-    if (currentUser.isEmpty) {
-      print("Current user not found in the database.");
-      return;
-    }
-
-    // Retrieve potential friend
-    var potentialFriend = widget.Database.firstWhere(
-          (user) => user['phonenumber'] == phoneNumber,
-      orElse: () => {}, // Return empty map if user is not found
-    );
-
-    if (potentialFriend.isEmpty) {
+    if (potentialFriend == null) {
       print("User with phone number $phoneNumber not found in the database.");
       return;
     }
 
-    // Check if the potential friend is already in your friends list
-    List<int> currentUserFriends = List<int>.from(currentUser['friends']);
-    if (currentUserFriends.contains(potentialFriend['userid'])) {
-      print("This user is already your friend.");
-      return;
+    // Check if the potential friend is already in the user's friends list
+    var currentFriendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
+
+    for (var friend in currentFriendsIds) {
+      if (friend['friendID'] == potentialFriend['ID']) {
+        print("You are already friends with ${potentialFriend['name']}!");
+        return;
+      }
     }
 
-    setState(() {
-      // Add each other as friends
-      (currentUser['friends'] as List).add(potentialFriend['userid']);
-      (potentialFriend['friends'] as List).add(currentUser['userid']);
+    // Add each other as friends in the database
+    await widget.dbService.addFriend(widget.userid, potentialFriend['ID']);
 
-      // Update the friendsList to reflect the change
-      friendsList = widget.Database.where((user) {
-        return currentUser['friends'].contains(user['userid']);
-      }).toList();
+     List<Map<String, dynamic>> tempList=[];
+    // Refresh the friends list
+    var updatedFriendsList = await widget.dbService.getUserFriendsIDs(widget.userid);
+    for (var friend in updatedFriendsList) {
+      var friendData = await widget.dbService.getUserById(friend['friendID']);
+      if (!tempList.contains(friendData)) {
+        print("friendData: $friendData does not exist in TempList");
+        tempList.add(friendData!);
+        eventCounts[friendData['ID']] = await widget.dbService.getEventCountForUser(friendData['ID']);
+      }
+    }
+    setState(() {
+      filteredFriendsList = List.from(tempList);
+      friendsList = List.from(tempList);
     });
 
     print("You are now friends with ${potentialFriend['name']}!");
@@ -197,6 +244,10 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      // Show loading indicator while data is loading
+      return Center(child: CircularProgressIndicator());
+    }
     return Scaffold(
       body: Stack(
         children: [
@@ -286,7 +337,6 @@ class _HomePageState extends State<HomePage> {
                               builder: (context) =>
                                   CreateEventPage(
                                     userid: widget.userid,
-                                    Database: widget.Database,
                                   ),
                             ),
                           );
@@ -300,12 +350,16 @@ class _HomePageState extends State<HomePage> {
                 Expanded(
                   child: ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: friendsList.length,
+                    itemCount: filteredFriendsList.length,
                     itemBuilder: (context, index) {
-                      var friend = friendsList[index]; // Get the friend data
+                      var friend = filteredFriendsList[index]; // Get the friend data
+                      // print("item count: ${filteredFriendsList.length}");
+                      // print("Friend: $friend");
+                      // print("eventCounts: $eventCounts");
+                      int eventCount = eventCounts[friend['ID']] ?? 0; // Get pre-fetched event count
                       return FriendCard(
                         name: friend['name'],
-                        eventCount: friend['events'].length,
+                        eventCount: eventCount,
                         onTap: () {
                           Navigator.push(
                             context,
@@ -314,7 +368,7 @@ class _HomePageState extends State<HomePage> {
                                   FriendsEventList(
                                     frienddata: friend,
                                     userid: widget.userid,
-                                    Database: widget.Database
+                                      dbService: widget.dbService
                                   ),
                             ),
                           );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:motion_tab_bar/MotionTabBarController.dart';
 import 'package:motion_tab_bar/MotionTabBar.dart';
-// import 'home_page.dart';
+import 'home_page.dart';
 import 'event_list_page.dart';
 // import 'profile_page.dart';
 // import 'my_pledged_gifts_page.dart';
@@ -77,11 +77,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         controller: _motionTabBarController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
+          HomePage(userid: 1, dbService: dbService),
           EventListPage(userid: 1, db: dbService),
-          // HomePage(userid: 1, dbService: dbService),
           // PledgedListPage(userid: 1, dbService: dbService),
           // ProfilePage(userid: 1, dbService: dbService),
-          EventListPage(userid: 1, db: dbService),
           EventListPage(userid: 1, db: dbService),
           EventListPage(userid: 1, db: dbService),
 

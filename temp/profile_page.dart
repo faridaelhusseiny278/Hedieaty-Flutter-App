@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'my_pledged_gifts_page.dart';
-import 'database.dart';
+// import 'my_pledged_gifts_page.dart';
+import '../lib/database.dart';
 class ProfilePage extends StatefulWidget {
   final int userid;
   DatabaseService dbService = DatabaseService();
