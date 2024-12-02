@@ -40,7 +40,8 @@ class DatabaseService {
           phonenumber TEXT,
           email TEXT,
           address TEXT,
-          preferences TEXT
+          preferences TEXT,
+          imageurl TEXT
         )''');
 
         await db.execute('''CREATE TABLE Events (
@@ -84,14 +85,14 @@ class DatabaseService {
 
         // Insert users
         String insertUsersSQL = ''' 
-    INSERT INTO Users (ID, name, phonenumber, email, address, preferences) 
+    INSERT INTO Users (ID, name, phonenumber, email, address, preferences, imageurl) 
     VALUES
-      (1, 'Alice', '+1234567890', 'alice@example.com', '123 Wonderland St, Fantasy City', 'email, sms, popup'),
-      (2, 'Bob', '+1987654321', 'bob@example.com', '456 Oak Ave, Citytown', 'email, sms'),
-      (3, 'Charlie', '+1122334455', 'charlie@example.com', '789 Pine Rd, Suburbia', 'sms, popup'),
-      (4, 'David', '+1998765432', 'david@example.com', '12 Elm St, Downtown', 'email, popup'),
-      (5, 'Eve', '+1222333444', 'eve@example.com', '56 Maple Rd, Greenfield', 'sms, popup'),
-      (6, 'Frank', '+1333444555', 'frank@example.com', 'frank@example.com', 'email, sms')
+      (1, 'Alice', '+1234567890', 'alice@example.com', '123 Wonderland St, Fantasy City', 'email, sms, popup',"assets/istockphoto-1296058958-612x612.jpg"),
+      (2, 'Bob', '+1987654321', 'bob@example.com', '456 Oak Ave, Citytown', 'email, sms', "assets/istockphoto-1371904269-612x612.jpg"),
+      (3, 'Charlie', '+1122334455', 'charlie@example.com', '789 Pine Rd, Suburbia', 'sms, popup',"assets/istockphoto-1417086080-612x612.jpg"),
+      (4, 'David', '+1998765432', 'david@example.com', '12 Elm St, Downtown', 'email, popup',"assets/young-smiling-man-adam-avatar-600nw-2107967969.png"),
+      (5, 'Eve', '+1222333444', 'eve@example.com', '56 Maple Rd, Greenfield', 'sms, popup',"assets/young-smiling-woman-mia-avatar-600nw-2127358541.png"),
+      (6, 'Frank', '+1333444555', 'frank@example.com', 'frank@example.com', 'email, sms', "assets/istockphoto-1296058958-612x612.jpg")
   ''';
 
         await db.execute(insertUsersSQL);
@@ -106,7 +107,7 @@ class DatabaseService {
       (9, 'Housewarming Party', '2024-11-15', 'Alice''s New Home', 'Housewarming', 'Upcoming', 1, 'Alice''s Housewarming Party at her new place'),
       (10, 'Christmas Celebration', '2024-12-25', 'Alice''s House', 'Holiday', 'Upcoming', 1, 'Traditional family Christmas celebration'),
       (11, 'New Year Eve Party', '2024-12-31', 'City Center', 'Celebration', 'Upcoming', 1, 'City-wide New Year celebration'),
-      (3, 'Graduation Party', '2024-11-29', 'Bob''s College', 'Celebration', 'Current', 2, 'Bob''s graduation ceremony and party'),
+      (3, 'Graduation Party', '2024-12-08', 'Bob''s College', 'Celebration', 'Current', 2, 'Bob''s graduation ceremony and party'),
       (14, 'Housewarming Party', '2024-07-15', 'Bob''s New Apartment', 'Housewarming', 'Upcoming', 2, 'Housewarming party at Bob''s new apartment'),
       (15, 'Birthday Celebration', '2024-08-10', 'Bob''s Backyard', 'Birthday', 'Upcoming', 2, 'Bob''s birthday celebration at his backyard'),
       (16, 'New Year''s Eve Party', '2024-12-31', 'Bob''s House', 'Celebration', 'Upcoming', 2, 'Celebrating New Year''s Eve at Bob''s house'),
@@ -124,7 +125,7 @@ class DatabaseService {
         String insertGiftsSQL = '''
     INSERT INTO Gifts (ID, name, category, status, imageurl, price, description, eventID)
     VALUES
-      (1, 'Smartwatch', 'Tech', FALSE, 'https://example.com/smartwatch.jpg', 200.0, 'A sleek smartwatch with fitness tracking features.', 1),
+      (1, 'Smartwatch', 'Tech', TRUE, 'https://example.com/smartwatch.jpg', 200.0, 'A sleek smartwatch with fitness tracking features.', 1),
       (2, 'Fitness Tracker', 'Health', TRUE, 'https://example.com/fitnesstracker.jpg', 50.0, 'A high-quality fitness tracker that helps monitor my workouts, heart rate, and daily activity.', 1),
       (3, 'Romantic Dinner Voucher', 'Experience', FALSE, 'https://example.com/dinner.jpg', 150.0, 'A voucher for a romantic dinner at a 5-star restaurant.', 2),
       (13, 'Wine Glass Set', 'Home', FALSE, 'https://example.com/wineglassset.jpg', 40.0, '', 9),
@@ -174,7 +175,8 @@ class DatabaseService {
         (5, 3), -- Charlie pledges to gift Bob a Camera
         -- Charlie's pledges
         (6, 4) -- David pledges to gift Charlie a Wine Glass Set
-        -- David's pledges
+       
+        
  ''' ;
         await db.execute(insertPledgesSQL);
         print("Sample data inserted successfully!");
@@ -379,5 +381,66 @@ class DatabaseService {
     Database myData = await db;
     await myData.rawQuery('DELETE FROM Pledges WHERE userID = $userId AND giftID = $giftId');
     }
+//     get user pledged gifts by user id
+    Future<List<Map<String, dynamic>>> getUserPledgedGifts(int userId) async {
+    Database myData = await db;
+    // use join to get the gifts pledged by the user
+    return await myData.rawQuery('SELECT * FROM Gifts INNER JOIN Pledges ON Gifts.ID = Pledges.giftID WHERE Pledges.userID = $userId');
+    }
+//     get event by gift id
+    Future<Map<String, dynamic>?> getEventByGiftId(int giftId) async {
+    Database myData = await db;
+    var result = await myData.rawQuery('SELECT * FROM Events WHERE ID IN (SELECT eventID FROM Gifts WHERE ID = $giftId)');
+    return result.isNotEmpty ? result.first : null;
+    }
+
+
+//     get user by gift id
+    Future<Map<String, dynamic>?> getUserbyGift(int giftId) async {
+    Database myData = await db;
+    var result = await myData.rawQuery('SELECT * FROM Users WHERE ID IN (SELECT userID FROM Events WHERE ID IN (SELECT eventID FROM Gifts WHERE ID = $giftId))');
+    return result.isNotEmpty ? result.first : null;
+    }
+  Future<List<Map<String, dynamic>>> getPledgedGiftsWithDetails(int userId) async {
+    Database myData = await db;
+    return await myData.rawQuery('''
+    SELECT Gifts.*, Events.name AS eventName, Events.date AS eventDate,
+           Users.name AS friendName, Users.imageurl AS friendImageUrl
+    FROM Gifts
+    INNER JOIN Pledges ON Gifts.ID = Pledges.giftID
+    INNER JOIN Events ON Events.ID = Gifts.eventID
+    INNER JOIN Users ON Users.ID = Events.userID
+    WHERE Pledges.userID = ?
+  ''', [userId]);
+  }
+//   unpledge gift using gift id and user id
+  Future<void> unpledgeGift(int userId, int giftId) async {
+    Database myData = await db;
+    await myData.rawQuery('DELETE FROM Pledges WHERE userID = $userId AND giftID = $giftId');
+  //   make the gift status false
+    await myData.rawQuery('UPDATE Gifts SET status = 0 WHERE ID = $giftId');
+  }
+
+// update user data
+  Future<void> updateUserData(int userId, Map<String, dynamic> userData) async {
+    Database myData = await db;
+    await myData.rawUpdate('''
+    UPDATE Users
+    SET name = ?, phonenumber = ?, email = ?, address = ?, preferences = ?, imageurl = ?
+    WHERE ID = ?
+  ''', [
+      userData['name'],
+      userData['phonenumber'],
+      userData['email'],
+      userData['address'],
+      userData['preferences'],
+      userData['imageurl'],
+      userId,
+    ]);
+  //   print the user data after update
+    var result = await myData.rawQuery('SELECT * FROM Users WHERE ID = $userId');
+    print("result after update is $result");
+  }
 
 }
+

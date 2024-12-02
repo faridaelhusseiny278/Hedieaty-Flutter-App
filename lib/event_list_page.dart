@@ -473,7 +473,7 @@ class _EventFormState extends State<EventForm> {
                   ? _statusController.text
                   : null,
               decoration: InputDecoration(labelText: 'Status'),
-              items: ['Upcoming', 'Current', 'past']
+              items: ['Upcoming', 'Current', 'Past']
                   .map((status) => DropdownMenuItem(
                 value: status,
                 child: Text(status),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-// import 'my_pledged_gifts_page.dart';
-import '../lib/database.dart';
+import 'my_pledged_gifts_page.dart';
+import 'database.dart';
 class ProfilePage extends StatefulWidget {
   final int userid;
   DatabaseService dbService = DatabaseService();
@@ -18,24 +18,49 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController addressController;
   late List<Map<String, dynamic>> events;
 
-  bool pushNotification = true;
-  bool emailNotification = true;
-  bool smsNotification = false;
+  late bool pushNotification;
+  late bool emailNotification;
+  late bool smsNotification ;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    // Fetch user data from the database
-    user = widget.Database.firstWhere((u) => u['userid'] == widget.userid);
-    print("user is $user");
-    events = user['events'];
-    print("events is $events");
-    // Initialize controllers with user's data
-    nameController = TextEditingController(text: user['name']);
-    emailController = TextEditingController(text: user['email']);
-    phoneController = TextEditingController(text: user['phonenumber']);
-    addressController = TextEditingController(text: user['address'] ?? "");
+    _loadUserData();
   }
+  void _loadUserData() async {
+    try {
+      final rawUser = await widget.dbService.getUserById(widget.userid);
+      final rawEvents = await widget.dbService.getEventsForUser(widget.userid);
+
+      events = [];
+
+      for (var rawEvent in rawEvents) {
+        final modifiableEvent = Map<String, dynamic>.from(rawEvent);
+
+        final gifts = await widget.dbService.getGiftsForEvent(modifiableEvent['ID']);
+        modifiableEvent['gifts'] = gifts;
+        events.add(modifiableEvent);
+      }
+
+      setState(() {
+        isLoading = false;
+        this.user = Map<String, dynamic>.from(rawUser!);
+        this.events = events;
+        nameController = TextEditingController(text: user['name']);
+        emailController = TextEditingController(text: user['email']);
+        phoneController = TextEditingController(text: user['phonenumber']);
+        addressController = TextEditingController(text: user['address']);
+        emailNotification= user['preferences'].contains('email');
+        pushNotification = user['preferences'].contains('popup');
+        smsNotification = user['preferences'].contains('sms');
+
+      });
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
+  }
+
 
   @override
   void dispose() {
@@ -49,9 +74,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
     return Scaffold(
       appBar: AppBar(
-        leading: Icon(Icons.arrow_back),
         actions: [Icon(Icons.camera_alt_outlined)],
         title: Text('Profile'),
         backgroundColor: Colors.deepPurple,
@@ -72,16 +101,13 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    user['name'],
+                    this.user['name'],
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    user['role'] ?? 'No role defined',
-                    style: TextStyle(color: Colors.grey),
-                  ),
+
                 ],
               ),
             ),
@@ -153,19 +179,17 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             SizedBox(height: 30),
-            // Expandable "Your Events" List
             ExpansionTile(
               title: Text(
-                'Your Events',
+                'My Events',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               children: this.events.map((event) {
-                final eventName = event['eventName'] ?? 'Unnamed Event';
-                final giftList = List<Map<String, dynamic>>.from(event['gifts'] ?? []);
-                return _buildEventTile(eventName, giftList);
+                final eventName = event['name'] ?? 'Unnamed Event';
+                return _buildEventTile(eventName, event['gifts']);
               }).toList(),
             ),
             SizedBox(height: 30),
@@ -173,10 +197,13 @@ class _ProfilePageState extends State<ProfilePage> {
               child: ElevatedButton(
                 onPressed: () {
                   // Navigate to the Pledged Gifts Page
-                  Navigator.push(
+                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => PledgedListPage(userid: widget.userid,Database: widget.Database),
+                      builder: (context) => PledgedListPage(
+                       userid: widget.userid,
+                        dbService: widget.dbService,
+                      ),
                     ),
                   );
                 },
@@ -204,15 +231,36 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  void _saveProfile() {
-    setState(() {
-      user['name'] = nameController.text;
-      user['email'] = emailController.text;
-      user['phonenumber'] = phoneController.text;
-      user['address'] = addressController.text;
-    });
-    print('Profile updated: $user');
+  void _saveProfile() async {
+    user['name'] = nameController.text;
+    user['email'] = emailController.text;
+    user['phonenumber'] = phoneController.text;
+    user['address'] = addressController.text;
+    List<String> preferences = [];
+    print('pushNotification: $pushNotification');
+    if (pushNotification) preferences.add('popup');
+    if (emailNotification) preferences.add('email');
+    if (smsNotification) preferences.add('sms');
+    user['preferences'] = preferences.join(', ');
+
+    try {
+      // Save the updated user data to the database
+      await widget.dbService.updateUserData(widget.userid, user);
+      setState(() {
+        print('Profile updated: $user');
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Profile updated successfully!')),
+      );
+    } catch (e) {
+      print('Error updating profile: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update profile.')),
+      );
+    }
   }
+
 
   Widget _buildSectionTitle(String title) {
     return Padding(
@@ -254,7 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         children: giftList.map((gift) {
-          final giftName = gift['giftName'] ?? 'Unnamed Gift';
+          final giftName = gift['name'] ?? 'Unnamed Gift';
           return _buildGiftTile(giftName);
         }).toList(),
       ),

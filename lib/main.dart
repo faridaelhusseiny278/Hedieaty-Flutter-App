@@ -3,8 +3,8 @@ import 'package:motion_tab_bar/MotionTabBarController.dart';
 import 'package:motion_tab_bar/MotionTabBar.dart';
 import 'home_page.dart';
 import 'event_list_page.dart';
-// import 'profile_page.dart';
-// import 'my_pledged_gifts_page.dart';
+import 'profile_page.dart';
+import 'my_pledged_gifts_page.dart';
 import 'database.dart';
 
 void main() => runApp(MyApp());
@@ -79,10 +79,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         children: [
           HomePage(userid: 1, dbService: dbService),
           EventListPage(userid: 1, db: dbService),
-          // PledgedListPage(userid: 1, dbService: dbService),
-          // ProfilePage(userid: 1, dbService: dbService),
-          EventListPage(userid: 1, db: dbService),
-          EventListPage(userid: 1, db: dbService),
+          PledgedListPage(userid: 1, dbService: dbService),
+          ProfilePage(userid: 1, dbService: dbService),
+          // EventListPage(userid: 1, db: dbService),
 
         ],
       ),
@@ -95,8 +94,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           Icons.home,
           Icons.card_giftcard,
           Icons.person,
-        ],
-        badges: [
         ],
         tabSize: 50,
         tabBarHeight: 55,

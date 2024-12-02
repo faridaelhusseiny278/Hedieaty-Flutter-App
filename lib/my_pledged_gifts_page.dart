@@ -14,58 +14,52 @@ class _PledgedListPageState extends State<PledgedListPage> {
   final DateFormat formatter = DateFormat('yyyy-MM-dd');
 
   late List<Map<String, dynamic>> pledgedGifts; // List to store pledged gifts
+  bool isLoading = true;
   @override
   void initState() {
     super.initState();
     _loadPledgedGifts();
-    print("pledgedgifts are $pledgedGifts");
   }
-  void _loadPledgedGifts() {
-    // Find the user based on userid
-    final user = widget.Database.firstWhere((user) => user['userid'] == widget.userid);
-    print("user is $user");
+  // Future<void> _loadPledgedGifts() async {
+  //   final pledgedGifts = await widget.dbService.getUserPledgedGifts(widget.userid);
+  //   for (var gift in pledgedGifts) {
+  //     final event = await widget.dbService.getEventByGiftId(gift['ID']);
+  //     final friend = await widget.dbService.getUserbyGift(gift['ID']);
+  //
+  //     gift['eventName'] = event?['name'];
+  //     gift['eventDate'] = event?['date'];
+  //     gift['friendName'] = friend?['name'];
+  //     gift['friendimageurl'] = friend?['imageurl'];
+  //   }
+  //
+  //   pledgedGifts.sort((a, b) => b['eventDate'].compareTo(a['eventDate']));
+  //   setState(() {
+  //     this.pledgedGifts = pledgedGifts;
+  //   });
+  //   print("pledgedGifts are $pledgedGifts");
+  // }
+  Future<void> _loadPledgedGifts() async {
+    final results = await widget.dbService.getPledgedGiftsWithDetails(widget.userid);
 
-    // Extract pledged gift IDs
-    final pledgedGiftIds = user['pledgedgifts'];
-    print("pledgedGiftIds is $pledgedGiftIds");
-
-    // Initialize pledged gifts list
-    pledgedGifts = [];
-
-    // Iterate over the user's friends
-    for (var friendId in user['friends']) {
-      // Find the friend in the database
-      final friend = widget.Database.firstWhere((user) => user['userid'] == friendId, orElse: () => {});
-      if (friend == null) continue; // Skip if no friend found
-
-      // Check all events of this friend
-      for (var event in friend['events']) {
-        for (var gift in event['gifts']) {
-          // Check if the giftId is in the pledged list
-          if (pledgedGiftIds.contains(gift['giftid'])) {
-            // Add the gift to the pledged list
-            pledgedGifts.add({
-              'giftid':gift['giftid'],
-              'giftName': gift['giftName'],
-              'imageurl': gift['imageurl'],
-              'price': gift['price'],
-              'description': gift['description'],
-              'category':gift['category'],
-              'eventName': event['eventName'],
-              'eventDate': DateTime.parse(event['eventDate']),
-              'friendName': friend['name'], // Get the friend's name
-            });
-          }
-        }
-      }
-    }
-    pledgedGifts.sort((a, b) => b['eventDate'].compareTo(a['eventDate']));
+    setState(() {
+      // copy the results to the pledgedGifts list
+      pledgedGifts = List<Map<String, dynamic>>.from(results);
+      pledgedGifts.sort((a, b) => b['eventDate'].compareTo(a['eventDate']));
+      isLoading = false;
+    });
     print("pledgedGifts are $pledgedGifts");
   }
 
 
+
+
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
     // Sort the list by due date, most recent to oldest
     pledgedGifts.sort((a, b) => b['eventDate'].compareTo(a['eventDate']));
 
@@ -84,7 +78,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
         itemBuilder: (context, index) {
           final gift = pledgedGifts[index];
           final now = DateTime.now();
-          final bool isOverdue = gift['eventDate'].isBefore(now);
+          final bool isOverdue = DateTime.parse(gift['eventDate']).isBefore(now);
 
           return Padding(
             padding: const EdgeInsets.symmetric(
@@ -97,7 +91,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                 // Circle avatar with the image
                 CircleAvatar(
                   radius: 32.0,
-                  backgroundImage: AssetImage(gift['imageurl']),
+                  backgroundImage: AssetImage(gift['friendImageUrl']),
                   backgroundColor: Colors.grey.shade200,
                 ),
                 const SizedBox(width: 16.0),
@@ -113,7 +107,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          gift['giftName'],
+                          gift['name'],
                           style: const TextStyle(
                             fontSize: 18.0,
                             fontWeight: FontWeight.bold,
@@ -129,7 +123,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                         ),
                         const SizedBox(height: 8.0),
                         Text(
-                          'Due Date: ${formatter.format(gift['eventDate'])}',
+                          'Due Date: ${formatter.format(DateTime.parse(gift['eventDate']))}',
                           style: TextStyle(
                             fontSize: 14.0,
                             color: isOverdue ? Colors.red : Colors.grey,
@@ -173,24 +167,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                                                 pledgedGifts.removeAt(index);
 
                                                 // Update the database
-                                                final user = widget.Database.firstWhere((user) => user['userid'] == widget.userid);
-                                                print("user is $user");
-                                                print("user pledged gifts before ${user['pledgedgifts']}");
-                                                if (user['pledgedgifts'] != null) {
-                                                  print("gift to remove is $giftToRemove");
-                                                  user['pledgedgifts'].remove(giftToRemove['giftid']);
-                                                  print("user pledged gifts after ${user['pledgedgifts']}");
-
-                                                }
-
-                                                for (var event in user['events']) {
-                                                  for (var gift in event['gifts']) {
-                                                    if (gift['giftid'] == giftToRemove['giftid']) {
-                                                      gift['pledged'] = false;
-                                                      break;
-                                                    }
-                                                  }
-                                                }
+                                                widget.dbService.unpledgeGift(widget.userid, giftToRemove['ID']);
                                               });
 
                                               Navigator.of(context).pop(); // Close the dialog

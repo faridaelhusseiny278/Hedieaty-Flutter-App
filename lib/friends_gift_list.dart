@@ -3,7 +3,7 @@ import 'package:hedieatyfinalproject/database.dart';
 // import 'package:hedieatyfinalproject/friends_gift_details.dart';
 import 'friends_gift_item.dart';
 import 'Event.dart';
-// import 'gift_details_page.dart';
+import 'friends_gift_details.dart';
 
 class FriendsGiftList extends StatefulWidget {
   final int userid;
@@ -127,12 +127,26 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
   Future<void> _onPledgeChanged(int index, bool pledged) async {
     final gift = filteredGifts[index];
     final currentUserId = widget.userid;
+    final eventDate = widget.event.date;
+
 
     try {
       if (pledged) {
-        print("i'm in if now");
         // Pledging the gift
-        if (gift['status'] == false || gift['status'] == 0) {
+        // checking if the gift is already pledged or deadline has passed
+        if ((gift['status'] == false || gift['status'] == 0)) {
+          if (eventDate == null || eventDate.isBefore(DateTime.now())) {
+            // Event deadline has passed
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  "Event deadline has passed. You can't pledge this gift.",
+                ),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
           // Mark the gift as pledged in the database
           await widget.dbService.updateGiftStatus(gift['ID'], true, currentUserId);
 
@@ -145,7 +159,8 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         }
       } else {
         // Unpledging the gift
-        if (gift['status'] == false || gift['status'] == 0) {
+        if ((gift['status'] == false || gift['status'] == 0))
+        {
           // If the gift is not pledged, do nothing
           return;
         }
@@ -154,8 +169,19 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
           currentUserId,
           gift['ID'],
         );
-        print("hasPledged is $hasPledged");
         if (hasPledged) {
+          if (eventDate == null || eventDate.isBefore(DateTime.now())) {
+            // Event deadline has passed
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  "Event deadline has passed. You can't unpledge this gift.",
+                ),
+                duration: Duration(seconds: 2),
+              ),
+            );
+            return;
+          }
           // Unpledge the gift in the database
           await widget.dbService.updateGiftStatus(gift['ID'], false, currentUserId);
 
@@ -323,6 +349,12 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                                 onPressed: () async {
 
                                   // Handle navigation or other actions here
+                                  Navigator.push(context,
+                                  MaterialPageRoute(builder: (context) => FriendsGiftDetails(
+                                  gift: gift,
+                                  )
+                                  )
+                                  );
                                 },
                                 onPledgeChanged: (isPledged) =>
                                     _onPledgeChanged(index, isPledged),

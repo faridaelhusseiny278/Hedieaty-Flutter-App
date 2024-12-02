@@ -15,19 +15,24 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
   late TextEditingController descriptionController;
   late TextEditingController priceController;
   late TextEditingController imageURLController;
-  String selectedCategory = "Electronics"; // Default category
+  String selectedCategory = "Tech"; // Default category
   bool isPledged = false; // Default status
 
   @override
   void initState() {
     super.initState();
     // Initialize controllers with the gift details
-    giftNameController = TextEditingController(text: widget.gift['giftName']);
+    giftNameController = TextEditingController(text: widget.gift['name']);
     descriptionController = TextEditingController(text: widget.gift['description'] ?? "");
     priceController = TextEditingController(text: widget.gift['price']?.toString() ?? "");
     imageURLController = TextEditingController(text: widget.gift['imageurl']?.toString() ?? "");
-    selectedCategory = widget.gift['category'] ?? "Electronics";
-    isPledged = widget.gift['pledged'] ?? false; // This line remains unchanged
+    selectedCategory = widget.gift['category'] ?? "Tech";
+    if (widget.gift['status'] == true || widget.gift['status'] == 1) {
+      isPledged = true;
+    }
+    else{
+      isPledged = false;
+    }
   }
 
   @override
@@ -43,7 +48,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("${widget.gift['giftName']} Details"),
+        title: Text("${widget.gift['name']} Details"),
         backgroundColor: Colors.purple,
       ),
       body: SingleChildScrollView(
