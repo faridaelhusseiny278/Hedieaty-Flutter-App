@@ -52,13 +52,24 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadFriendsList() async {
     var friendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
+    var finalfriendIds = [];
+    print("friendsIds: $friendsIds");
+    for (var friend in friendsIds) {
+      if (friend['friendID'] == widget.userid) {
+        finalfriendIds.add(friend['userID']);
+      }
+      else{
+      finalfriendIds.add(friend['friendID']);
+    }
+    }
 
     // Clear friends list before adding new ones to avoid duplicates
     friendsList.clear();
     filteredFriendsList.clear();
 
-    for (var friend in friendsIds) {
-      var friendData = await widget.dbService.getUserById(friend['friendID']);
+    for (var id in finalfriendIds) {
+      print("id is: $id");
+      var friendData = await widget.dbService.getUserById(id);
       friendsList.add(friendData!);
 
       var eventcount = await widget.dbService.getEventCountForUser(friendData['ID']);

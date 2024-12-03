@@ -77,10 +77,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         controller: _motionTabBarController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          HomePage(userid: 1, dbService: dbService),
-          EventListPage(userid: 1, db: dbService),
-          PledgedListPage(userid: 1, dbService: dbService),
-          ProfilePage(userid: 1, dbService: dbService),
+          HomePage(userid: 2, dbService: dbService),
+          EventListPage(userid: 2, db: dbService),
+          PledgedListPage(userid: 2, dbService: dbService),
+          ProfilePage(userid: 2, dbService: dbService),
           // EventListPage(userid: 1, db: dbService),
 
         ],

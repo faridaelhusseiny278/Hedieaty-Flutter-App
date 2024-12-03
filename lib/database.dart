@@ -283,10 +283,15 @@ class DatabaseService {
     var result = await myData.rawQuery('SELECT * FROM Gifts WHERE ID = $giftid');
     print("result after update is $result");
   }
-//get user friends by user id
   Future<List<Map<String, dynamic>>> getUserFriendsIDs(int userId) async {
     Database myData = await db;
-    return await myData.rawQuery('SELECT * FROM Friends WHERE userID = $userId OR friendID = $userId');
+
+    // Return the friends of the user, excluding the user themselves
+    return await myData.rawQuery('''
+    SELECT * FROM Friends
+    WHERE (userID = $userId OR friendID = $userId)
+    AND (userID != friendID)
+  ''');
   }
 
   //get gifts for event by event id
