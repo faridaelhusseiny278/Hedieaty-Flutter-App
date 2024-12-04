@@ -236,7 +236,8 @@ class _CalendarPageState extends State<EventListPage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => GiftListPage(eventid: event.id!),
+              builder: (context) => GiftListPage(eventid: event.id!,
+                  userid: widget.userid),
             ),
           );
         },

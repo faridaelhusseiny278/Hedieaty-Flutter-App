@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'rounded_button.dart';
 import 'friend_card.dart';
 import 'friends_event_list.dart';
-// import 'event_list_page.dart';
 import 'createEvent.dart';
 import 'database.dart';
 import 'dart:async';

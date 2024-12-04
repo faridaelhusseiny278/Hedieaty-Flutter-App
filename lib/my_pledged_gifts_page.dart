@@ -22,7 +22,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
   }
 
   Future<void> _loadPledgedGifts() async {
-    final results = await widget.dbService.getPledgedGiftsWithDetails(widget.userid);
+    final results = await widget.dbService.getPledgedGiftsWithDetailsfromDatabase(widget.userid);
     print("results are $results");
 
     setState(() {
@@ -31,7 +31,6 @@ class _PledgedListPageState extends State<PledgedListPage> {
       pledgedGifts.sort((a, b) => b['eventDate'].compareTo(a['eventDate']));
       isLoading = false;
     });
-    print("pledgedGifts are $pledgedGifts");
   }
 
 
@@ -146,12 +145,11 @@ class _PledgedListPageState extends State<PledgedListPage> {
                                               setState(() {
                                                 // Get the gift to be removed
                                                 final giftToRemove = pledgedGifts[index];
-
-                                                // Remove from UI and Database
-                                                pledgedGifts.removeAt(index);
+                                                print("gift to remove is $giftToRemove");
 
                                                 // Update the database
-                                                widget.dbService.unpledgeGift(widget.userid, giftToRemove['ID']);
+                                                widget.dbService.updateGiftStatus(giftToRemove['giftid'], false,widget.userid, pledgedGifts[index]['friendId']);
+                                                pledgedGifts.removeAt(index);
                                               });
 
                                               Navigator.of(context).pop(); // Close the dialog

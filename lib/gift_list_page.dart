@@ -6,7 +6,8 @@ import 'gift_item.dart';
 import 'Event.dart';
 class GiftListPage extends StatefulWidget {
   final int eventid;
-  GiftListPage({required this.eventid});
+  final int userid;
+  GiftListPage({required this.eventid,required this.userid});
 
   @override
   _GiftListPage createState() => _GiftListPage();
@@ -145,7 +146,7 @@ class _GiftListPage extends State<GiftListPage> {
                     onPressed: () async {
                       // remove the gift from the event's gifts in the database
                       Map<String, dynamic> giftToRemove = filteredGifts[index];
-                      await dbService.deleteGiftsForUser(giftToRemove['giftid']);
+                      await dbService.deleteGiftsForUser(giftToRemove['giftid'], widget.userid, widget.eventid);
                       setState(() {
                         // Remove the gift from the filtered list
                         filteredGifts.removeAt(index);
@@ -292,7 +293,7 @@ class _GiftListPage extends State<GiftListPage> {
                         // Check if the updated gift is not null
                         if (updatedGift != null) {
                           updatedGift['eventID'] = widget.eventid;
-                          int id = await dbService.addGiftForUser(updatedGift);
+                          int id = await dbService.addGiftForUser(updatedGift, widget.userid);
                           // Add the new or updated gift to the list
                           updatedGift['giftid'] = id;
                           print("updatedGift is $updatedGift");
@@ -343,7 +344,7 @@ class _GiftListPage extends State<GiftListPage> {
 
                           if (updatedGift != null) {
                             print("Gift ID: ${gift['giftid']}");
-                            await dbService.updateGiftForUser(updatedGift, gift['giftid']);
+                            await dbService.updateGiftForUser(updatedGift, gift['giftid'], widget.userid);
                             setState(() {
                               filteredGifts[index] = updatedGift;
                               allGifts[index] = updatedGift;

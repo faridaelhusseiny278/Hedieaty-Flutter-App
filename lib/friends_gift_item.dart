@@ -5,7 +5,7 @@ class FriendsGiftItem extends StatefulWidget {
   final String category;
   final String description;
   String imageurl; // Image URL for the avatar
-  double price;
+  int price;
   final bool isButtonEnabled;
   final bool status; // Pledge status passed from the parent
   final VoidCallback onPressed;
