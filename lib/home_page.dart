@@ -43,37 +43,26 @@ class _HomePageState extends State<HomePage> {
     _loadFriendsList();
 
     _searchController.addListener(() {
-      if (_debounce?.isActive ?? false) _debounce?.cancel();
-      _debounce = Timer(const Duration(milliseconds: 200), () {
+
         _filterFriendsList(_searchController.text);
-      });
+
     });
   }
 
   Future<void> _loadFriendsList() async {
     var friendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
-    var finalfriendIds = [];
-    print("friendsIds: $friendsIds");
-    for (var friend in friendsIds) {
-      if (friend['friendID'] == widget.userid) {
-        finalfriendIds.add(friend['userID']);
-      }
-      else{
-      finalfriendIds.add(friend['friendID']);
-    }
-    }
 
     // Clear friends list before adding new ones to avoid duplicates
     friendsList.clear();
     filteredFriendsList.clear();
 
-    for (var id in finalfriendIds) {
+    for (var id in friendsIds) {
       print("id is: $id");
-      var friendData = await widget.dbService.getUserById(id);
+      var friendData = await widget.dbService.getUserByIdforFriends(id);
       friendsList.add(friendData!);
 
-      var eventcount = await widget.dbService.getEventCountForUser(friendData['ID']);
-      eventCounts[friendData['ID']] = eventcount;
+      var eventcount = await widget.dbService.getEventCountForUserFriends(friendData['userid'].toString());
+      eventCounts[friendData['userid']] = eventcount;
     }
 
     setState(() {
@@ -84,33 +73,34 @@ class _HomePageState extends State<HomePage> {
 
 
   void _filterFriendsList(String query) async {
-    var currentUser = (await widget.dbService.getUserById(widget.userid))!;
+    // Store the current query
+    final currentQuery = query;
 
-    // Temporary list to store filtered friends
-    List<Map<String, dynamic>> filteredList = [];
-
-    // When the search query is empty, reset to the original list
+    // Set filteredFriendsList to the full list when the query is empty
     if (query.isEmpty) {
       setState(() {
-        filteredFriendsList = List.from(friendsList); // Reset to full list
+        filteredFriendsList = List.from(friendsList);
       });
       return;
     }
 
+    // Temporary list to store filtered friends
+    List<Map<String, dynamic>> filteredList = [];
+
     for (var friend in friendsList) {
       // Ensure the user is a friend
-      bool isFriend = await widget.dbService.areFriends(currentUser['ID'], friend['ID']);
+      bool isFriend = await widget.dbService.areFriends(widget.userid, friend['userid']);
 
       // Check if the friend's name matches the query
       bool matchesSearch = friend['name'].toLowerCase().contains(query.toLowerCase());
 
       // Check if any gift name in any event contains the search query
       bool hasMatchingGift = false;
-      var events = await widget.dbService.getEventsForUser(friend['ID']);
+      var events = await widget.dbService.getEventsForUserFriends(friend['userid']);
       for (var event in events) {
-        var gifts = await widget.dbService.getGiftsForEvent(event['ID']);
+        var gifts = await widget.dbService.getGiftsForEventFriends(event['eventId'], friend['userid']);
         for (var gift in gifts) {
-          if (gift['name'].toLowerCase().contains(query.toLowerCase())) {
+          if (gift['giftName'].toLowerCase().contains(query.toLowerCase())) {
             hasMatchingGift = true;
             break;
           }
@@ -124,10 +114,14 @@ class _HomePageState extends State<HomePage> {
       }
     }
 
-    setState(() {
-      filteredFriendsList = filteredList;
-    });
+    // Ensure the query hasn't changed before updating the state
+    if (_searchController.text == currentQuery) {
+      setState(() {
+        filteredFriendsList = List.from(filteredList);
+      });
+    }
   }
+
 
 
 
@@ -220,26 +214,25 @@ class _HomePageState extends State<HomePage> {
 
     // Check if the potential friend is already in the user's friends list
     var currentFriendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
+    print("current friend ids: $currentFriendsIds for user: ${widget.userid}");
 
-    for (var friend in currentFriendsIds) {
-      if (friend['friendID'] == potentialFriend['ID']) {
-        print("You are already friends with ${potentialFriend['name']}!");
-        return;
-      }
+    if (currentFriendsIds.contains(potentialFriend['userid'])) {
+      print("You are already friends with ${potentialFriend['name']}!");
+      return;
     }
 
     // Add each other as friends in the database
-    await widget.dbService.addFriend(widget.userid, potentialFriend['ID']);
+    await widget.dbService.addFriend(widget.userid, potentialFriend['userid']);
 
      List<Map<String, dynamic>> tempList=[];
     // Refresh the friends list
-    var updatedFriendsList = await widget.dbService.getUserFriendsIDs(widget.userid);
-    for (var friend in updatedFriendsList) {
-      var friendData = await widget.dbService.getUserById(friend['friendID']);
+    var updatedFriendsListids = await widget.dbService.getUserFriendsIDs(widget.userid);
+    for (var friendid in updatedFriendsListids) {
+      var friendData = await widget.dbService.getUserByIdforFriends(friendid);
       if (!tempList.contains(friendData)) {
         print("friendData: $friendData does not exist in TempList");
         tempList.add(friendData!);
-        eventCounts[friendData['ID']] = await widget.dbService.getEventCountForUser(friendData['ID']);
+        eventCounts[friendData['userid']] = await widget.dbService.getEventCountForUserFriends(friendData['userid'].toString());
       }
     }
     setState(() {
@@ -367,7 +360,7 @@ class _HomePageState extends State<HomePage> {
                       // print("item count: ${filteredFriendsList.length}");
                       // print("Friend: $friend");
                       // print("eventCounts: $eventCounts");
-                      int eventCount = eventCounts[friend['ID']] ?? 0; // Get pre-fetched event count
+                      int eventCount = eventCounts[friend['userid']] ?? 0; // Get pre-fetched event count
                       return FriendCard(
                         name: friend['name'],
                         eventCount: eventCount,

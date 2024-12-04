@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class GiftItem extends StatefulWidget {
-  final int ID;
+  final int giftid;
   final String giftName;
   final String category;
   final bool status;
@@ -12,7 +12,7 @@ class GiftItem extends StatefulWidget {
   final VoidCallback onLongPress;
 
   GiftItem({
-   required this.ID,
+   required this.giftid,
     required this.giftName,
     required this.category,
     required this.status,

@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:hedieatyfinalproject/database.dart';
-// import 'package:hedieatyfinalproject/friends_gift_details.dart';
+import 'package:hedieatyfinalproject/friend_event.dart';
 import 'friends_gift_item.dart';
-import 'Event.dart';
 import 'friends_gift_details.dart';
 
 class FriendsGiftList extends StatefulWidget {
   final int userid;
   DatabaseService dbService = DatabaseService();
-  Event event;
+  friendEvent event;
   int friendid;
    FriendsGiftList({required this.event, required this.userid, required this.dbService, required this.friendid});
 
@@ -32,7 +31,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
     _loadGifts();
   }
   void _loadGifts() async {
-  final gifts = await widget.dbService.getGiftsForEvent((widget.event.id)!);
+  final gifts = await widget.dbService.getGiftsForEventFriends((widget.event.id)!, widget.friendid);
     setState(() {
       OriginalGifts = gifts;
       filteredGifts = OriginalGifts.map((gift) => Map<String, dynamic>.from(gift)).toList();
@@ -46,19 +45,19 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
     setState(() {
       if (criteria == 'name') {
         selectedFilter = 'name';
-        filteredGifts.sort((a, b) => a['name'].compareTo(b['name']));
+        filteredGifts.sort((a, b) => a['giftName'].compareTo(b['giftName']));
       } else if (criteria == 'category') {
         selectedFilter = 'category';
         filteredGifts.sort((a, b) => a['category'].compareTo(b['category']));
       } else if (criteria == 'status') {
         selectedFilter = 'status';
         filteredGifts.sort((a, b) {
-          int aStatus = (a['status'] is bool)
-              ? (a['status'] ? 1 : 0)
-              : (a['status'] as int);
-          int bStatus = (b['status'] is bool)
-              ? (b['status'] ? 1 : 0)
-              : (b['status'] as int);
+          int aStatus = (a['pledged'] is bool)
+              ? (a['pledged'] ? 1 : 0)
+              : (a['pledged'] as int);
+          int bStatus = (b['pledged'] is bool)
+              ? (b['pledged'] ? 1 : 0)
+              : (b['pledged'] as int);
 
           return bStatus - aStatus;
         });
@@ -70,9 +69,9 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
     for (var gift in filteredGifts) {
       final isPledgedByCurrentUser = await widget.dbService.hasPledgedGift(
         widget.userid,
-        gift['ID'],
+        gift['giftid'],
       );
-      pledgeStatuses[gift['ID']] = isPledgedByCurrentUser;
+      pledgeStatuses[gift['giftid']] = isPledgedByCurrentUser;
     }
     return pledgeStatuses;
   }
@@ -134,7 +133,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
       if (pledged) {
         // Pledging the gift
         // checking if the gift is already pledged or deadline has passed
-        if ((gift['status'] == false || gift['status'] == 0)) {
+        if ((gift['pledged'] == false || gift['pledged'] == 0)) {
           if (eventDate == null || eventDate.isBefore(DateTime.now())) {
             // Event deadline has passed
             ScaffoldMessenger.of(context).showSnackBar(
@@ -148,18 +147,18 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             return;
           }
           // Mark the gift as pledged in the database
-          await widget.dbService.updateGiftStatus(gift['ID'], true, currentUserId);
+          await widget.dbService.updateGiftStatus(gift['giftid'], true, currentUserId, widget.friendid);
 
           // Update status in the state
           setState(() {
-            filteredGifts[index]['status'] = true;
+            filteredGifts[index]['pledged'] = true;
             print("succesfuly updated gift status to true");
             OriginalGifts = filteredGifts;
           });
         }
       } else {
         // Unpledging the gift
-        if ((gift['status'] == false || gift['status'] == 0))
+        if ((gift['pledged'] == false || gift['pledged'] == 0))
         {
           // If the gift is not pledged, do nothing
           return;
@@ -167,7 +166,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
         // Check if the current user has pledged this gift
         final hasPledged = await widget.dbService.hasPledgedGift(
           currentUserId,
-          gift['ID'],
+          gift['giftid'],
         );
         if (hasPledged) {
           if (eventDate == null || eventDate.isBefore(DateTime.now())) {
@@ -183,11 +182,11 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             return;
           }
           // Unpledge the gift in the database
-          await widget.dbService.updateGiftStatus(gift['ID'], false, currentUserId);
+          await widget.dbService.updateGiftStatus(gift['giftid'], false,currentUserId, widget.friendid);
 
           // Update status in the state
           setState(() {
-            filteredGifts[index]['status'] = false;
+            filteredGifts[index]['pledged'] = false;
            print("succesfuly updated gift status to false");
             OriginalGifts = filteredGifts;
           });
@@ -260,7 +259,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                               } else {
                                 filteredGifts = OriginalGifts.where((gift) {
                                   if (selectedFilter == 'name') {
-                                    return gift['name']
+                                    return gift['giftName']
                                         .toString()
                                         .toLowerCase()
                                         .contains(value.toLowerCase());
@@ -270,7 +269,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                                         .toLowerCase()
                                         .contains(value.toLowerCase());
                                   } else if (selectedFilter == 'status') {
-                                    final status = (gift['status'] == 1 || gift['status'] == true)
+                                    final status = (gift['pledged'] == 1 || gift['pledged'] == true)
                                         ? 'pledged'
                                         : 'unpledged';
                                     return status.contains(value.toLowerCase());
@@ -321,10 +320,10 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                           itemCount: filteredGifts.length,
                           itemBuilder: (context, index) {
                             var gift = filteredGifts[index];
-                            final isPledged = (gift['status'] == 1 || gift['status'] == true) ? true : false;
+                            final isPledged = (gift['pledged'] == 1 || gift['pledged'] == true) ? true : false;
                             print("isPledged is $isPledged");
                             final pledgedByCurrentUser =
-                                pledgeStatuses[gift['ID']] ?? false;
+                                pledgeStatuses[gift['giftid']] ?? false;
                             print("pledgedByCurrentUser is $pledgedByCurrentUser");
 
                             // Set item background color
@@ -337,7 +336,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
                             return Container(
                               color: backgroundColor, // Apply background color
                               child: FriendsGiftItem(
-                                name: gift['name'],
+                                name: gift['giftName'],
                                 category: gift['category'],
                                 status: isPledged,
                                 imageurl: gift['imageurl'],

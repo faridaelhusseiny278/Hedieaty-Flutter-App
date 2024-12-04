@@ -38,7 +38,7 @@ class _ProfilePageState extends State<ProfilePage> {
       for (var rawEvent in rawEvents) {
         final modifiableEvent = Map<String, dynamic>.from(rawEvent);
 
-        final gifts = await widget.dbService.getGiftsForEvent(modifiableEvent['ID']);
+        final gifts = await widget.dbService.getGiftsForEvent(modifiableEvent['eventId']);
         modifiableEvent['gifts'] = gifts;
         events.add(modifiableEvent);
       }
@@ -51,9 +51,9 @@ class _ProfilePageState extends State<ProfilePage> {
         emailController = TextEditingController(text: user['email']);
         phoneController = TextEditingController(text: user['phonenumber']);
         addressController = TextEditingController(text: user['address']);
-        emailNotification= user['preferences'].contains('email');
-        pushNotification = user['preferences'].contains('popup');
-        smsNotification = user['preferences'].contains('sms');
+        emailNotification= user['notification_preferences'].contains('email');
+        pushNotification = user['notification_preferences'].contains('popup');
+        smsNotification = user['notification_preferences'].contains('sms');
 
       });
     } catch (e) {
@@ -188,7 +188,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               children: this.events.map((event) {
-                final eventName = event['name'] ?? 'Unnamed Event';
+                final eventName = event['eventName'] ?? 'Unnamed Event';
                 return _buildEventTile(eventName, event['gifts']);
               }).toList(),
             ),
@@ -241,7 +241,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (pushNotification) preferences.add('popup');
     if (emailNotification) preferences.add('email');
     if (smsNotification) preferences.add('sms');
-    user['preferences'] = preferences.join(', ');
+    user['notification_preferences'] = preferences.join(', ');
 
     try {
       // Save the updated user data to the database
@@ -302,7 +302,7 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         children: giftList.map((gift) {
-          final giftName = gift['name'] ?? 'Unnamed Gift';
+          final giftName = gift['giftName'] ?? 'Unnamed Gift';
           return _buildGiftTile(giftName);
         }).toList(),
       ),

@@ -22,12 +22,12 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   void initState() {
     super.initState();
     // Initialize controllers with the gift details
-    giftNameController = TextEditingController(text: widget.giftDetails['name']);
+    giftNameController = TextEditingController(text: widget.giftDetails['giftName']);
     descriptionController = TextEditingController(text: widget.giftDetails['description'] ?? "");
     priceController = TextEditingController(text: widget.giftDetails['price']?.toString() ?? "");
     imageURLController = TextEditingController(text: widget.giftDetails['imageurl']?.toString() ?? "");
     selectedCategory = widget.giftDetails['category'] ?? "Tech";
-    isPledged = (widget.giftDetails['status'] == 0 || widget.giftDetails['status'] == false) ? false: true;
+    isPledged = (widget.giftDetails['pledged'] == 0 || widget.giftDetails['pledged'] == false) ? false: true;
   }
 
   @override
@@ -44,7 +44,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("${widget.giftDetails['name']} Details"),
+        title: Text("${widget.giftDetails['giftName']} Details"),
         backgroundColor: Colors.deepPurple,
       ),
       body: SingleChildScrollView(
@@ -292,8 +292,8 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                   } else {
                     print("is it pledgeddD?? $isPledged");
                     Navigator.pop(context, {
-                      'ID': widget.giftDetails['ID'],
-                      'name': giftNameController.text.isNotEmpty
+                      'giftid': widget.giftDetails['giftid'],
+                      'giftName': giftNameController.text.isNotEmpty
                           ? giftNameController.text
                           : "Unnamed Gift",
                       'category': selectedCategory,
@@ -301,7 +301,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                           ? descriptionController.text
                           : "No Description",
                       'price': double.tryParse(priceController.text) ?? 0.0,
-                      'status': isPledged,
+                      'pledged': isPledged,
                       'imageurl': imageURLController.text.isNotEmpty? imageURLController.text: "" // Send the image URL here
                     });
                   }

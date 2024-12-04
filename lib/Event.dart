@@ -5,7 +5,7 @@ class Event {
   final DateTime date;
   final String status;
   final String location;
-  final String description;
+  final String? description;
 
   Event({
      this.id,
@@ -14,17 +14,17 @@ class Event {
     required this.category,
     required this.date,
     required this.location,
-    required this.description,
+    this.description,
   });
   factory Event.fromMap(Map<String, dynamic> map) {
     return Event(
-      id: map['ID'],
-      name: map['name'],
-      status: map['status'],
-      description: map['description'],
+      id: map['eventId'],
+      name: map['eventName'],
+      status: map['Status'],
+      description: map['description']??'',
       category: map['category'],
-      date: DateTime.parse(map['date']),
-      location: map['location']
+      date: DateTime.parse(map['eventDate']),
+      location: map['eventLocation']
     );
   }
 }

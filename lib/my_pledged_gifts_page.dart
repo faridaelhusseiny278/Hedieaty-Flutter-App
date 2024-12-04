@@ -20,26 +20,10 @@ class _PledgedListPageState extends State<PledgedListPage> {
     super.initState();
     _loadPledgedGifts();
   }
-  // Future<void> _loadPledgedGifts() async {
-  //   final pledgedGifts = await widget.dbService.getUserPledgedGifts(widget.userid);
-  //   for (var gift in pledgedGifts) {
-  //     final event = await widget.dbService.getEventByGiftId(gift['ID']);
-  //     final friend = await widget.dbService.getUserbyGift(gift['ID']);
-  //
-  //     gift['eventName'] = event?['name'];
-  //     gift['eventDate'] = event?['date'];
-  //     gift['friendName'] = friend?['name'];
-  //     gift['friendimageurl'] = friend?['imageurl'];
-  //   }
-  //
-  //   pledgedGifts.sort((a, b) => b['eventDate'].compareTo(a['eventDate']));
-  //   setState(() {
-  //     this.pledgedGifts = pledgedGifts;
-  //   });
-  //   print("pledgedGifts are $pledgedGifts");
-  // }
+
   Future<void> _loadPledgedGifts() async {
     final results = await widget.dbService.getPledgedGiftsWithDetails(widget.userid);
+    print("results are $results");
 
     setState(() {
       // copy the results to the pledgedGifts list
@@ -107,7 +91,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          gift['name'],
+                          gift['giftName'],
                           style: const TextStyle(
                             fontSize: 18.0,
                             fontWeight: FontWeight.bold,

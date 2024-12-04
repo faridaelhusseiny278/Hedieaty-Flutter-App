@@ -14,7 +14,7 @@ class GiftListPage extends StatefulWidget {
 
 class _GiftListPage extends State<GiftListPage> {
   DatabaseService dbService = DatabaseService();
-  String selectedFilter = 'name'; // Default filter is gift name
+  String selectedFilter = 'giftName'; // Default filter is gift name
   List<Map<String, dynamic>> filteredGifts = [];
   List<Map<String, dynamic>> allGifts = [];
   TextEditingController giftNameController = TextEditingController();
@@ -42,8 +42,8 @@ class _GiftListPage extends State<GiftListPage> {
   Future<String> getEventName() async {
     List<Map> Response = await dbService.readData("SELECT * from Events");
     for (int i = 0; i < Response.length; i++) {
-      if (Response[i]['ID'] == widget.eventid) {
-        return Response[i]['name'];
+      if (Response[i]['eventId'] == widget.eventid) {
+        return Response[i]['eventName'];
       }
     }
     return "";
@@ -53,14 +53,14 @@ class _GiftListPage extends State<GiftListPage> {
   void sortGifts(String criteria) {
     setState(() {
       if (criteria == 'name') {
-        filteredGifts.sort((a, b) => a['name'].compareTo(b['name']));
+        filteredGifts.sort((a, b) => a['giftName'].compareTo(b['giftName']));
       } else if (criteria == 'category') {
         filteredGifts.sort((a, b) => a['category'].compareTo(b['category']));
       } else if (criteria == 'status') {
         // Ensure status is properly handled
         filteredGifts.sort((a, b) {
-          int aStatus = (a['status'] is bool) ? (a['status'] ? 1 : 0) : (a['status'] as int);
-          int bStatus = (b['status'] is bool) ? (b['status'] ? 1 : 0) : (b['status'] as int);
+          int aStatus = (a['pledged'] is bool) ? (a['pledged'] ? 1 : 0) : (a['pledged'] as int);
+          int bStatus = (b['pledged'] is bool) ? (b['pledged'] ? 1 : 0) : (b['pledged'] as int);
 
           return bStatus - aStatus;
         });
@@ -145,7 +145,7 @@ class _GiftListPage extends State<GiftListPage> {
                     onPressed: () async {
                       // remove the gift from the event's gifts in the database
                       Map<String, dynamic> giftToRemove = filteredGifts[index];
-                      await dbService.deleteGiftsForUser(giftToRemove['id']);
+                      await dbService.deleteGiftsForUser(giftToRemove['giftid']);
                       setState(() {
                         // Remove the gift from the filtered list
                         filteredGifts.removeAt(index);
@@ -241,7 +241,7 @@ class _GiftListPage extends State<GiftListPage> {
                         },
                         itemBuilder: (context) => [
                           PopupMenuItem(
-                            value: 'name',
+                            value: 'giftName',
                             child: Text('Name'),
                           ),
                           PopupMenuItem(
@@ -279,10 +279,10 @@ class _GiftListPage extends State<GiftListPage> {
                           MaterialPageRoute(
                             builder: (context) => GiftDetailsPage(
                               giftDetails: {
-                                'name': '',
+                                'giftName': '',
                                 'category': selectedCategory, // Default category
                                 'description': '',
-                                'status': false, // Default pledge status
+                                'pledged': false, // Default pledge status
                                 'imageurl': '',
                                 'price': ''
                               },
@@ -294,7 +294,8 @@ class _GiftListPage extends State<GiftListPage> {
                           updatedGift['eventID'] = widget.eventid;
                           int id = await dbService.addGiftForUser(updatedGift);
                           // Add the new or updated gift to the list
-                          updatedGift['ID'] = id;
+                          updatedGift['giftid'] = id;
+                          print("updatedGift is $updatedGift");
                           setState(() {
                             filteredGifts.add(updatedGift);
                             allGifts.add(updatedGift);
@@ -323,10 +324,10 @@ class _GiftListPage extends State<GiftListPage> {
                       print("gift is $gift");
 
                       return GiftItem(
-                        ID: gift['ID'],
-                        giftName: gift['name'],
+                        giftid: gift['giftid'],
+                        giftName: gift['giftName'],
                         category: gift['category'],
-                          status: (gift['status'] == 0 || gift['status'] == false) ? false : true,
+                          status: (gift['pledged'] == 0 || gift['pledged'] == false) ? false : true,
                           imageurl: gift['imageurl'],
                         price: gift['price'],
                         description: gift['description'],
@@ -341,8 +342,8 @@ class _GiftListPage extends State<GiftListPage> {
                           );
 
                           if (updatedGift != null) {
-                            print("Gift ID: ${gift['ID']}");
-                            await dbService.updateGiftForUser(updatedGift, gift['ID']);
+                            print("Gift ID: ${gift['giftid']}");
+                            await dbService.updateGiftForUser(updatedGift, gift['giftid']);
                             setState(() {
                               filteredGifts[index] = updatedGift;
                               allGifts[index] = updatedGift;

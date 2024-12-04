@@ -1,6 +1,12 @@
+import 'package:hedieatyfinalproject/friend_event.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'Event.dart'; // Ensure this model is correctly defined
+import 'Event.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+
 
 class DatabaseService {
   static DatabaseService? _dbService;
@@ -35,64 +41,64 @@ class DatabaseService {
       onCreate: (db, version) async {
         // Create tables
         await db.execute('''CREATE TABLE Users (
-          ID INTEGER PRIMARY KEY AUTOINCREMENT,
+          userid INTEGER PRIMARY KEY AUTOINCREMENT,
           name TEXT,
           phonenumber TEXT,
           email TEXT,
           address TEXT,
-          preferences TEXT,
+          notification_preferences TEXT,
           imageurl TEXT
         )''');
 
         await db.execute('''CREATE TABLE Events (
-          ID INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT,
-          date Date,
-          location TEXT,
+          eventId INTEGER PRIMARY KEY AUTOINCREMENT,
+          eventName TEXT,
+          eventDate Date,
+          eventLocation TEXT,
           description TEXT,
-          status TEXT,
+          Status TEXT,
           category TEXT,
           userID INTEGER,
-          FOREIGN KEY(userID) REFERENCES Users(ID)
+          FOREIGN KEY(userID) REFERENCES Users(userid)
         )''');
 
         await db.execute('''CREATE TABLE Gifts (
-          ID INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT,
+          giftid INTEGER PRIMARY KEY AUTOINCREMENT,
+          giftName TEXT,
           description TEXT,
           category TEXT,
           price REAL,
           imageurl TEXT,
-          status BOOLEAN,
+          pledged BOOLEAN,
           eventID INTEGER,
-          FOREIGN KEY(eventID) REFERENCES Events(ID)
+          FOREIGN KEY(eventID) REFERENCES Events(eventId)
         )''');
 
         await db.execute('''CREATE TABLE Friends (
           userID INTEGER,
           friendID INTEGER,
           PRIMARY KEY (userID, friendID),
-          FOREIGN KEY(userID) REFERENCES Users(ID),
-          FOREIGN KEY(friendID) REFERENCES Users(ID)
+          FOREIGN KEY(userID) REFERENCES Users(userid),
+          FOREIGN KEY(friendID) REFERENCES Users(userid)
         )''');
 
         await db.execute('''CREATE TABLE Pledges (
           giftID INTEGER,
           userID INTEGER,
-          FOREIGN KEY(giftID) REFERENCES Gifts(ID),
-          FOREIGN KEY(userID) REFERENCES Users(ID)
+          FOREIGN KEY(giftID) REFERENCES Gifts(giftid),
+          FOREIGN KEY(userID) REFERENCES Users(userid)
         )''');
 
         // Insert users
         String insertUsersSQL = ''' 
-    INSERT INTO Users (ID, name, phonenumber, email, address, preferences, imageurl) 
+    INSERT INTO Users (userid, name, phonenumber, email, address, notification_preferences, imageurl) 
     VALUES
-      (1, 'Alice', '+1234567890', 'alice@example.com', '123 Wonderland St, Fantasy City', 'email, sms, popup',"assets/istockphoto-1296058958-612x612.jpg"),
-      (2, 'Bob', '+1987654321', 'bob@example.com', '456 Oak Ave, Citytown', 'email, sms', "assets/istockphoto-1371904269-612x612.jpg"),
-      (3, 'Charlie', '+1122334455', 'charlie@example.com', '789 Pine Rd, Suburbia', 'sms, popup',"assets/istockphoto-1417086080-612x612.jpg"),
-      (4, 'David', '+1998765432', 'david@example.com', '12 Elm St, Downtown', 'email, popup',"assets/young-smiling-man-adam-avatar-600nw-2107967969.png"),
-      (5, 'Eve', '+1222333444', 'eve@example.com', '56 Maple Rd, Greenfield', 'sms, popup',"assets/young-smiling-woman-mia-avatar-600nw-2127358541.png"),
-      (6, 'Frank', '+1333444555', 'frank@example.com', 'frank@example.com', 'email, sms', "assets/istockphoto-1296058958-612x612.jpg")
+      (0, 'Alice', '+1234567890', 'alice@example.com', '123 Wonderland St, Fantasy City', 'email, sms, popup',"assets/istockphoto-1296058958-612x612.jpg"),
+      (1, 'Bob', '+1987654321', 'bob@example.com', '456 Oak Ave, Citytown', 'email, sms', "assets/istockphoto-1371904269-612x612.jpg"),
+      (2, 'Charlie', '+1122334455', 'charlie@example.com', '789 Pine Rd, Suburbia', 'sms, popup',"assets/istockphoto-1417086080-612x612.jpg"),
+      (3, 'David', '+1998765432', 'david@example.com', '12 Elm St, Downtown', 'email, popup',"assets/young-smiling-man-adam-avatar-600nw-2107967969.png"),
+      (4, 'Eve', '+1222333444', 'eve@example.com', '56 Maple Rd, Greenfield', 'sms, popup',"assets/young-smiling-woman-mia-avatar-600nw-2127358541.png"),
+      (5, 'Frank', '+1333444555', 'frank@example.com', 'frank@example.com', 'email, sms', "assets/istockphoto-1296058958-612x612.jpg")
   ''';
 
         await db.execute(insertUsersSQL);
@@ -100,22 +106,22 @@ class DatabaseService {
 
         // Insert events for Alice, Bob, Charlie, David, Eve, and Frank
         String insertEventsSQL = '''
-    INSERT INTO Events (ID, name, date, location, category, status, userid, description)
+    INSERT INTO Events (eventId, eventName, eventDate, eventLocation, category, Status, userid, description)
     VALUES
-      (1, 'Birthday Bash', '2024-12-10', 'Alice''s House', 'Birthday', 'Upcoming', 1, 'Alice''s 30th Birthday Celebration'),
-      (2, 'Wedding Anniversary', '2024-10-05', 'Luxury Hotel', 'Social', 'Past', 1, 'Celebrating Alice and her partner''s wedding anniversary'),
-      (9, 'Housewarming Party', '2024-11-15', 'Alice''s New Home', 'Housewarming', 'Upcoming', 1, 'Alice''s Housewarming Party at her new place'),
-      (10, 'Christmas Celebration', '2024-12-25', 'Alice''s House', 'Holiday', 'Upcoming', 1, 'Traditional family Christmas celebration'),
-      (11, 'New Year Eve Party', '2024-12-31', 'City Center', 'Celebration', 'Upcoming', 1, 'City-wide New Year celebration'),
-      (3, 'Graduation Party', '2024-12-08', 'Bob''s College', 'Celebration', 'Current', 2, 'Bob''s graduation ceremony and party'),
-      (14, 'Housewarming Party', '2024-07-15', 'Bob''s New Apartment', 'Housewarming', 'Upcoming', 2, 'Housewarming party at Bob''s new apartment'),
-      (15, 'Birthday Celebration', '2024-08-10', 'Bob''s Backyard', 'Birthday', 'Upcoming', 2, 'Bob''s birthday celebration at his backyard'),
-      (16, 'New Year''s Eve Party', '2024-12-31', 'Bob''s House', 'Celebration', 'Upcoming', 2, 'Celebrating New Year''s Eve at Bob''s house'),
-      (17, 'Christmas Dinner', '2024-12-25', 'Bob''s House', 'Holiday', 'Upcoming', 2, 'Bob''s Christmas dinner with family and friends'),
-      (4, 'Housewarming', '2024-12-01', 'Charlie''s New House', 'Social', 'Current', 3, 'Charlie''s housewarming event with friends'),
-      (5, 'Christmas Party', '2024-12-25', 'David''s Apartment', 'Holiday', 'Upcoming', 4, 'Holiday party at David''s apartment'),
-      (6, 'Baby Shower', '2025-01-15', 'Eve''s House', 'Celebration', 'Upcoming', 5, 'Eve''s baby shower party with close friends and family'),
-      (7, 'New Year Party', '2024-01-01', 'Frank''s Mansion', 'Celebration', 'Upcoming', 6, 'New Year party at Frank''s mansion')
+      (1, 'Birthday Bash', '2024-12-10', 'Alice''s House', 'Birthday', 'Upcoming', 0, 'Alice''s 30th Birthday Celebration'),
+      (2, 'Wedding Anniversary', '2024-10-05', 'Luxury Hotel', 'Social', 'Past', 0, 'Celebrating Alice and her partner''s wedding anniversary'),
+      (9, 'Housewarming Party', '2024-11-15', 'Alice''s New Home', 'Housewarming', 'Upcoming', 0, 'Alice''s Housewarming Party at her new place'),
+      (10, 'Christmas Celebration', '2024-12-25', 'Alice''s House', 'Holiday', 'Upcoming', 0, 'Traditional family Christmas celebration'),
+      (11, 'New Year Eve Party', '2024-12-31', 'City Center', 'Celebration', 'Upcoming', 0, 'City-wide New Year celebration'),
+      (3, 'Graduation Party', '2024-12-08', 'Bob''s College', 'Celebration', 'Current', 1, 'Bob''s graduation ceremony and party'),
+      (14, 'Housewarming Party', '2024-07-15', 'Bob''s New Apartment', 'Housewarming', 'Upcoming', 1, 'Housewarming party at Bob''s new apartment'),
+      (15, 'Birthday Celebration', '2024-08-10', 'Bob''s Backyard', 'Birthday', 'Upcoming', 1, 'Bob''s birthday celebration at his backyard'),
+      (16, 'New Year''s Eve Party', '2024-12-31', 'Bob''s House', 'Celebration', 'Upcoming', 1, 'Celebrating New Year''s Eve at Bob''s house'),
+      (17, 'Christmas Dinner', '2024-12-25', 'Bob''s House', 'Holiday', 'Upcoming', 1, 'Bob''s Christmas dinner with family and friends'),
+      (4, 'Housewarming', '2024-12-01', 'Charlie''s New House', 'Social', 'Current', 2, 'Charlie''s housewarming event with friends'),
+      (5, 'Christmas Party', '2024-12-25', 'David''s Apartment', 'Holiday', 'Upcoming', 3, 'Holiday party at David''s apartment'),
+      (6, 'Baby Shower', '2025-01-15', 'Eve''s House', 'Celebration', 'Upcoming', 4, 'Eve''s baby shower party with close friends and family'),
+      (7, 'New Year Party', '2024-01-01', 'Frank''s Mansion', 'Celebration', 'Upcoming', 5, 'New Year party at Frank''s mansion')
   ''';
 
 
@@ -123,7 +129,7 @@ class DatabaseService {
 
         // Insert gifts for Alice, Bob, Charlie, David, Eve, and Frank
         String insertGiftsSQL = '''
-    INSERT INTO Gifts (ID, name, category, status, imageurl, price, description, eventID)
+    INSERT INTO Gifts (giftid, giftName, category, pledged, imageurl, price, description, eventID)
     VALUES
       (1, 'Smartwatch', 'Tech', TRUE, 'https://example.com/smartwatch.jpg', 200.0, 'A sleek smartwatch with fitness tracking features.', 1),
       (2, 'Fitness Tracker', 'Health', TRUE, 'https://example.com/fitnesstracker.jpg', 50.0, 'A high-quality fitness tracker that helps monitor my workouts, heart rate, and daily activity.', 1),
@@ -154,11 +160,11 @@ class DatabaseService {
         String insertFriendsSQL = '''
     INSERT INTO Friends (userID, friendID)
     VALUES
-      (1, 2), (1, 3), (1, 6), (1, 5),
-      (2, 3), (2, 6), (2, 5), (2, 4), 
-      (3, 4), (3, 6), 
-      (4, 5), (4, 6), 
-      (5, 6)
+      (0, 1), (0, 2), (0, 5), (0, 4),
+      (1, 2), (1, 5), (1, 4), (1, 3), 
+      (2, 3), (2, 5), 
+      (3, 4), (3, 5), 
+      (4, 5)
   ''';
         await db.execute(insertFriendsSQL);
 
@@ -202,25 +208,43 @@ class DatabaseService {
     return await myData.rawUpdate(SQL);
   }
 
-  // Get user by ID
-  Future<Map<String, dynamic>?> getUserById(int userId) async {
-    Database myData = await db;
-    var result = await myData.query(
-      'Users',
-      where: 'ID = ?',
-      whereArgs: [userId],
-    );
-    if (result.isNotEmpty) {
-      return result.first;
+  Future<Map<String, dynamic>?> getUserByIdforFriends(int userId) async {
+    // Reference to the database for the specific user
+    final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId");
+
+    try {
+      // Fetch the snapshot for the user's data
+      final DataSnapshot snapshot = await dbRef.get();
+
+      if (snapshot.exists) {
+        if (snapshot.value is Map) {
+          // Cast the data to Map<String, dynamic>
+          final user = Map<String, dynamic>.from(snapshot.value as Map<Object?, Object?>);
+          return user;
+        } else if (snapshot.value is List) {
+          // If the data is a List, return the first element as a Map
+          final user = (snapshot.value as List).first as Map<String, dynamic>;
+          return user;
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return null;
+        }
+      } else {
+        print("No data found for user ID $userId.");
+        return null;
+      }
+    } catch (e) {
+      print("Error fetching user data: $e");
+      throw e;
     }
-    return null;
   }
+
 
   // Add event for user
   Future<int> addEventForUser(int userId, Event event) async {
     Database myData = await db;
 
-    return await myData.rawInsert("INSERT INTO Events (name, category, date, location, description, status, userID) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    return await myData.rawInsert("INSERT INTO Events (eventName, category, eventDate, eventLocation, description, Status, userID) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [event.name, event.category, event.date.toString(), event.location, event.description, event.status, userId]);
   }
   // Add gift for user
@@ -228,18 +252,43 @@ class DatabaseService {
     Database myData = await db;
 
 
-    int id= await myData.rawInsert("INSERT INTO Gifts (name, category, price, imageurl, description, status, eventID) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [gift['name'], gift['category'], gift['price'], gift['imageurl'], gift['description'], gift['status'], gift['eventID']]);
+    int id= await myData.rawInsert("INSERT INTO Gifts (giftName, category, price, imageurl, description, pledged, eventID) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [gift['giftName'], gift['category'], gift['price'], gift['imageurl'], gift['description'], gift['pledged'], gift['eventID']]);
 
     var result = await myData.rawQuery('SELECT * FROM Gifts');
-    print("result after insert is $result");
     return id;
   }
   // check if the 2 users are friends
-  Future<bool> areFriends(int userId, int friendId) async {
-    Database myData = await db;
-    var result = await myData.rawQuery('SELECT * FROM Friends WHERE userID = $userId AND friendID = $friendId');
-    return result.isNotEmpty;
+  Future<bool> areFriends(int currentUserId, int friendId) async {
+    try {
+      // Reference to the current user's "friends" node
+      final DatabaseReference friendsRef = FirebaseDatabase.instance.ref("Users/${currentUserId.toString()}/friends");
+
+      // Fetch the snapshot of the friends list
+      final DataSnapshot snapshot = await friendsRef.get();
+
+      if (snapshot.exists) {
+
+        if (snapshot.value is Map) {
+          // If the data is a Map, check if the friendId is present
+          final friends = (snapshot.value as Map).values.map((e) => int.parse(e.toString())).toList();
+          return friends.contains(friendId);
+        } else if (snapshot.value is List) {
+          // If the data is a List, check if the friendId is present
+          final friends = List<int>.from(snapshot.value as List);
+          return friends.contains(friendId);
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return false;
+        }
+      } else {
+        print("No friends found for user ${currentUserId.toString()}.");
+        return false;
+      }
+    } catch (e) {
+      print("Error checking friendship between ${currentUserId.toString()} and ${friendId.toString()}: $e");
+      throw e;
+    }
   }
 
   // Update event for user
@@ -248,7 +297,7 @@ class DatabaseService {
 
     // Use parameterized query to avoid syntax issues and SQL injection
     await myData.rawUpdate(
-        'UPDATE Events SET name = ?, category = ?, date = ?, location = ?, description = ?, status = ? WHERE userID = ? and ID = ?',
+        'UPDATE Events SET eventName = ?, category = ?, eventDate = ?, eventLocation = ?, description = ?, Status = ? WHERE userID = ? and eventId = ?',
         [
           event.name,
           event.category,
@@ -268,30 +317,353 @@ class DatabaseService {
 
     // Use parameterized query to avoid syntax issues and SQL injection
     await myData.rawUpdate(
-        'UPDATE Gifts SET name = ?, category = ?, price = ?, imageurl = ?, description = ?, status = ? WHERE ID = ?',
+        'UPDATE Gifts SET giftName = ?, category = ?, price = ?, imageurl = ?, description = ?, pledged = ? WHERE giftid = ?',
         [
-          gift['name'],
+          gift['giftName'],
           gift['category'],
           gift['price'],
           gift['imageurl'],
           gift['description'],
-          gift['status']==true?1:0,
+          gift['pledged']==true?1:0,
           giftid,
         ]
     );
   //   print the gift with id 1
     var result = await myData.rawQuery('SELECT * FROM Gifts WHERE ID = $giftid');
-    print("result after update is $result");
   }
-  Future<List<Map<String, dynamic>>> getUserFriendsIDs(int userId) async {
-    Database myData = await db;
 
-    // Return the friends of the user, excluding the user themselves
-    return await myData.rawQuery('''
-    SELECT * FROM Friends
-    WHERE (userID = $userId OR friendID = $userId)
-    AND (userID != friendID)
-  ''');
+
+  Future<List<int>> getUserFriendsIDs(int userId) async {
+    // Reference to the database
+    final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/friends");
+    print("i'm hereee");
+
+    try {
+      // Fetch the snapshot from the "friends" node
+      final DataSnapshot snapshot = await dbRef.get();
+
+      print("i'm hereee in datasnapshot");
+      if (snapshot.exists) {
+        if (snapshot.value is Map) {
+          // If the data is a Map, handle as a map and extract the friend IDs
+          final friends = (snapshot.value as Map).values.map((e) => int.parse(e.toString())).toList();
+          return friends;
+        } else if (snapshot.value is List) {
+          // If the data is a List, handle as a list of friend IDs
+          final friends = List<int>.from(snapshot.value as List);
+          return friends;
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return [];
+        }
+      } else {
+        print("No friends found for this user.");
+        return [];
+      }
+    } catch (e) {
+      print("Error fetching friends: $e");
+      throw e;
+    }
+  }
+
+
+  //get gifts for event by event id
+  Future<List<Map<String, dynamic>>> getGiftsForEventFriends(int eventId, int userId) async {
+    try {
+      // Reference to the user's events node
+      final DatabaseReference eventsRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+
+      // Fetch the snapshot of the events node
+      final DataSnapshot snapshot = await eventsRef.get();
+
+      if (snapshot.exists) {
+        if (snapshot.value is Map) {
+          // Convert the snapshot data to a list of maps
+          final events = (snapshot.value as Map).values.map((event) {
+            return Map<String, dynamic>.from(event as Map);
+          }).toList();
+          // print("events are $events for user $userId");
+          // print("event id is $eventId");
+
+          // Loop through all events and find the event with the matching eventId
+          for (var event in events) {
+            if (event['eventId'] == eventId) {
+              // Ensure the 'gifts' key exists and is a list of maps
+              if (event['gifts'] is List) {
+                return (event['gifts'] as List).map((gift) {
+                  return Map<String, dynamic>.from(gift as Map);
+                }).toList();
+              }
+              else if (event['gifts'] is Map) {
+                return (event['gifts'] as Map).values.map((gift) {
+                  return Map<String, dynamic>.from(gift as Map);
+                }).toList();
+              }
+              else {
+                print("Gifts for event $eventId are not in the expected format.");
+                return [];
+              }
+            }
+          }
+        } else if (snapshot.value is List) {
+          // Handle the case where the snapshot value is a List
+          final events = (snapshot.value as List).map((event) {
+            return Map<String, dynamic>.from(event as Map);
+          }).toList();
+          // print("events are $events for user $userId");
+          // print("event id is $eventId");
+
+          // Loop through all events and find the event with the matching eventId
+          for (var event in events) {
+            // print("event gifts are ${event['gifts']}");
+            if (event['eventId'] == eventId) {
+              // Ensure the 'gifts' key exists and is a list of maps
+              if (event['gifts'] is List) {
+                // print ("yes it is a list");
+                return (event['gifts'] as List).map((gift) {
+                  return Map<String, dynamic>.from(gift as Map);
+                }).toList();
+              }
+              else if (event['gifts'] is Map) {
+                // print ("yes it is a map");
+                return (event['gifts'] as Map).values.map((gift) {
+                  return Map<String, dynamic>.from(gift as Map);
+                }).toList();
+              }
+              else {
+                print("Gifts for event $eventId are not in the expected format.");
+                return [];
+              }
+            }
+          }
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return [];
+        }
+
+        // If no event with the given eventId is found
+        print("Event with ID $eventId not found for user $userId.");
+        return [];
+      } else {
+        print("No events found for user $userId.");
+        return [];
+      }
+    } catch (e) {
+      print("Error fetching gifts for event $eventId: $e");
+      throw e;
+    }
+  }
+
+
+  Future<Map<String, dynamic>?> getUserByPhoneNumber(String phoneNumber) async {
+    try {
+      // Reference to the database
+      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
+
+      // Fetch the snapshot of the users node
+      final DataSnapshot snapshot = await dbRef.get();
+      print("snapshot is $snapshot");
+
+      if (snapshot.exists) {
+        print("snapshot exists");
+        //
+        if (snapshot.value is Map) {
+          // If the data is a Map, loop through the values to find the user with the matching phone number
+          final users = (snapshot.value as Map).values.map((user) {
+            return Map<String, dynamic>.from(user as Map);
+          }).toList();
+          print("users are $users");
+
+          for (var user in users) {
+            if (user['phonenumber'] == phoneNumber) {
+              return user;
+            }
+          }
+        } else if (snapshot.value is List) {
+          // If the data is a List, loop through the list to find the user with the matching phone number
+          final users = (snapshot.value as List)
+              .where((user) => user != null) // Exclude null users
+              .map((user) => Map<String, dynamic>.from(user as Map))
+              .toList();
+          print("users are $users");
+          for (var user in users) {
+            if (user['phonenumber'] == phoneNumber) {
+              return user;
+            }
+          }
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return null;
+        }
+      } else {
+        print("No users found in the database.");
+        return null;
+      }
+    } catch (e) {
+      print("Error fetching user by phone number: $e");
+      throw e;
+    }
+
+
+
+  }
+
+
+  Future<void> addFriend(int userId, int friendId) async {
+    try {
+      // Reference to the current user's friends node
+      final DatabaseReference userFriendsRef = FirebaseDatabase.instance.ref("Users/$userId/friends");
+
+      // Reference to the friend's friends node
+      final DatabaseReference friendFriendsRef = FirebaseDatabase.instance.ref("Users/$friendId/friends");
+
+      // Add the friendId to the user's friends list
+      await userFriendsRef.push().set(friendId);
+
+      // Add the userId to the friend's friends list
+      await friendFriendsRef.push().set(userId);
+
+      print("Friendship added: $userId and $friendId are now friends.");
+    } catch (e) {
+      print("Error adding friend: $e");
+      throw e;
+    }
+  }
+  // update gift status
+  Future<void> updateGiftStatus(int giftId, bool status, int userId, int friendid) async {
+    try {
+      // Reference to the user's events node
+      final DatabaseReference userEventsRef = FirebaseDatabase.instance.ref("Users/$friendid/events");
+
+      // Fetch the snapshot of the user's events
+      final DataSnapshot eventsSnapshot = await userEventsRef.get();
+
+      if (eventsSnapshot.exists && eventsSnapshot.value is List) {
+        final eventsList = eventsSnapshot.value as List;
+
+        for (var eventIndex = 0; eventIndex < eventsList.length; eventIndex++) {
+          final eventData = eventsList[eventIndex];
+
+          // Skip null entries
+          if (eventData == null) continue;
+
+          // Check if event contains gifts
+          if (eventData is Map && eventData.containsKey("gifts") && eventData["gifts"] is List) {
+            final giftsList = eventData["gifts"] as List;
+
+            for (var giftIndex = 0; giftIndex < giftsList.length; giftIndex++) {
+              final giftData = giftsList[giftIndex];
+
+              // Skip null entries
+              if (giftData == null) continue;
+              print("gift data is $giftData");
+              print("gift id is $giftId");
+              // Check if the giftId matches
+              if (giftData is Map && giftData["giftid"] == giftId) {
+                // Update the 'pledged' status
+                print("Updating gift status for gift $giftId...");
+                await userEventsRef
+                    .child("$eventIndex/gifts/$giftIndex/pledged")
+                    .set(status);
+
+                // Add the gift ID to the pledged gifts list
+                final DatabaseReference pledgedGiftsRef = FirebaseDatabase.instance.ref("Users/$userId/pledgedgifts");
+                final DataSnapshot pledgedGiftsSnapshot = await pledgedGiftsRef.get();
+
+                if (pledgedGiftsSnapshot.exists && pledgedGiftsSnapshot.value is List) {
+                  final pledgedGifts = List<int>.from(pledgedGiftsSnapshot.value as List);
+
+                  // Avoid duplicate entries
+                  if (!pledgedGifts.contains(giftId)) {
+                    pledgedGifts.add(giftId);
+                    await pledgedGiftsRef.set(pledgedGifts);
+                  }
+                } else {
+                  // Initialize pledged gifts list if it doesn't exist
+                  await pledgedGiftsRef.set([giftId]);
+                }
+
+                print("Gift status updated successfully.");
+                return;
+              }
+            }
+          }
+        }
+
+        print("Gift with ID $giftId not found.");
+      } else {
+        print("No events found for user $userId.");
+      }
+    } catch (e) {
+      print("Error updating gift status for gift $giftId: $e");
+      throw e;
+    }
+  }
+
+
+
+
+
+
+  // get event count for user
+  Future<int> getEventCountForUserFriends(String userId) async {
+    try {
+      // Reference to the user's events node
+      final DatabaseReference eventsRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+
+      // Fetch the snapshot of the events
+      final DataSnapshot snapshot = await eventsRef.get();
+
+      if (snapshot.exists) {
+        // Count the number of events
+        if (snapshot.value is List) {
+          final eventCount = (snapshot.value as List).length;
+          print("Event count for user $userId: $eventCount");
+          return eventCount;
+        } else if (snapshot.value is Map) {
+          final eventCount = (snapshot.value as Map).length;
+          print("Event count for user $userId: $eventCount");
+          return eventCount;
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return 0;
+        }
+
+      } else {
+        print("No events found for user $userId.");
+        return 0;
+      }
+    } catch (e) {
+      print("Error fetching events for user $userId: $e");
+      throw e;
+    }
+  }
+
+
+  // Delete events for user
+  Future<void> deleteEventsForUser(int userId, List<Event> eventsToDelete) async {
+    Database myData = await db;
+    for (var event in eventsToDelete) {
+      await myData.rawDelete("DELETE FROM Events WHERE eventId = ${event.id}");
+    }
+    // return totalDeleted;
+  }
+  Future<Map<String, dynamic>?> getUserById(int userId) async {
+    Database myData = await db;
+    var result = await myData.query(
+      'Users',
+      where: 'userid = ?',
+      whereArgs: [userId],
+    );
+    if (result.isNotEmpty) {
+      return result.first;
+    }
+    return null;
+  }
+
+  Future<List<Map<String, dynamic>>> getEventsForUser(int userId) async {
+    Database myData = await db;
+    return await myData.rawQuery('SELECT * FROM Events WHERE userID = $userId');
   }
 
   //get gifts for event by event id
@@ -299,61 +671,44 @@ class DatabaseService {
     Database myData = await db;
     return await myData.rawQuery('SELECT * FROM Gifts WHERE eventID = $eventId');
   }
-  Future<Map<String, dynamic>?> getUserByPhoneNumber(String phoneNumber) async {
-    Database myData = await db;
-    var result = await myData.rawQuery('SELECT * FROM Users WHERE phoneNumber = ?', [phoneNumber]);
-    return result.isNotEmpty ? result.first : null;
-  }
-  Future<void> addFriend(int userId, int friendId) async {
-    Database myData = await db;
-    await myData.rawInsert(
-      'INSERT INTO Friends (userID, friendID) VALUES (?, ?)',
-      [userId, friendId],
-    );
-  }
-  // update gift status
-  Future<void> updateGiftStatus(int giftId, bool status, int userid) async {
-    Database myData = await db;
-    print("im in update gift status");
+//   check if user id has pledged a gift id
 
-    await myData.rawUpdate('UPDATE Gifts SET status = ? WHERE ID = ?', [status==true? 1:0, giftId]);
-    var result = await myData.rawQuery('SELECT * FROM Gifts WHERE ID = $giftId');
-    print("result after update is $result");
-    if (status) {
-      print("status is $status");
-      await myData.rawInsert('INSERT INTO Pledges (giftID, userID) VALUES (?, ?)', [giftId, userid]);
-    } else {
-      print("status is $status");
-      await myData.rawDelete('DELETE FROM Pledges WHERE giftID = $giftId AND userID = $userid');
-    }
-    var pledges = await myData.rawQuery('SELECT * FROM Pledges');
-    print("pledges after update is $pledges");
-    for (var pledge in pledges) {
-      print(pledge);
+  Future<bool> hasPledgedGift(int userId, int giftId) async {
+    try {
+      // Reference to the user's pledged gifts node
+      final DatabaseReference pledgedGiftsRef =
+      FirebaseDatabase.instance.ref("Users/$userId/pledgedgifts");
+
+      // Fetch the snapshot of the pledged gifts
+      final DataSnapshot snapshot = await pledgedGiftsRef.get();
+
+      if (snapshot.exists) {
+        if (snapshot.value is List) {
+          final pledgedGifts = snapshot.value as List;
+
+          // Check if the giftId is in the pledgedGifts list
+          return pledgedGifts.contains(giftId);
+        } else {
+          print("Unexpected data format for pledgedgifts: ${snapshot.value}");
+          return false;
+        }
+      } else {
+        print("No pledged gifts found for user $userId.");
+        return false;
+      }
+    } catch (e) {
+      print("Error checking pledged gift for user $userId: $e");
+      throw e;
     }
   }
 
-  // get event count for user
-  Future<int> getEventCountForUser(int userId) async {
-    Database myData = await db;
-    var result = await myData.rawQuery('SELECT COUNT(*) FROM Events WHERE userID = $userId');
-    return Sqflite.firstIntValue(result) ?? 0;
-  }
 
 
-  // Delete events for user
-  Future<void> deleteEventsForUser(int userId, List<Event> eventsToDelete) async {
-    Database myData = await db;
-    int totalDeleted = 0;
-    for (var event in eventsToDelete) {
-       await myData.rawQuery("Select * from Events where ID = ${event.id} AND userID = $userId");
-    }
-    // return totalDeleted;
-  }
   // delete gifts for user
   Future<void> deleteGiftsForUser(int giftId) async {
     Database myData = await db;
-    await myData.rawQuery("DELETE FROM Gifts WHERE ID = $giftId");
+    await myData.rawQuery("DELETE FROM Gifts WHERE giftid = $giftId");
+    print("done deleting");
   }
 
   // Get all events for a user
@@ -362,25 +717,119 @@ class DatabaseService {
     var result = await myData.rawQuery('SELECT * FROM Events WHERE userID = $userId');
     return result.map((event) => Event.fromMap(event)).toList();
   }
-//   get events for user (dont return an object)
-  Future<List<Map<String, dynamic>>> getEventsForUser(int userId) async {
-    Database myData = await db;
-    return await myData.rawQuery('SELECT * FROM Events WHERE userID = $userId');
+  Future<List<friendEvent>> getAllEventsForUserFriends(int userId) async{
+    try{
+      // Reference to the user's events node
+      final DatabaseReference eventsRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+
+      // Fetch the snapshot of the events node
+      final DataSnapshot snapshot = await eventsRef.get();
+
+      if (snapshot.exists) {
+        // Check if the data is a Map (Firebase often uses Map<dynamic, dynamic>)
+        if (snapshot.value is Map) {
+          print("snapshot value is map");
+          // Convert the snapshot value to Map<String, dynamic>
+          final events = (snapshot.value as Map).values.map((event) {
+            // Ensure dynamic types are cast to Map<String, dynamic>
+            print("event is $event");
+            return friendEvent.fromMap(Map<String, dynamic>.from(event as Map));
+          }).toList();
+          print("events are $events");
+
+          return events;
+        } else if (snapshot.value is List) {
+          print("snapshot value is list");
+          final rawEvents = snapshot.value as List;
+
+          // Iterate through each event and log it
+          for (var i = 0; i < rawEvents.length; i++) {
+          //   cast each gift list to a map
+            if (rawEvents[i]['gifts'] is List) {
+              rawEvents[i]['gifts'] = (rawEvents[i]['gifts'] as List).map((gift) {
+                return Map<String, dynamic>.from(gift as Map);
+              }).toList();
+            }
+            else if (rawEvents[i]['gifts'] is Map) {
+              rawEvents[i]['gifts'] = Map<String, dynamic>.from(rawEvents[i]['gifts'] as Map);
+            }
+          }
+
+          // Convert events while excluding null entries
+          final events = rawEvents
+              .where((event) => event != null)
+              .map((event) {
+            try {
+              // print("Processing event: $event");
+              return friendEvent.fromMap(Map<String, dynamic>.from(event as Map));
+            } catch (e) {
+              print("Error processing event: $event, error: $e");
+              return null; // Skip problematic events
+            }
+          })
+              .whereType<friendEvent>() // Remove nulls from the final list
+              .toList();
+
+          print("Processed events: $events");
+          return events;
+        }
+        else {
+          print("Unexpected data format: ${snapshot.value}");
+          return [];
+        }
+      } else {
+        print("No events found for user $userId.");
+        return [];
+      }
+    } catch (e) {
+      print("Error fetching events for user $userId: $e");
+      throw e;
+    }
   }
-//   check if user id has pledged a gift id
 
-    Future<bool> hasPledgedGift(int userId, int giftId) async {
-    Database myData = await db;
-    var result = await myData.rawQuery('SELECT * FROM Pledges WHERE userID = $userId AND giftID = $giftId');
-    // print all pledges
-    var pledges = await myData.rawQuery('SELECT * FROM Pledges');
-    print("pledges in has pledged gift is");
-    for (var pledge in pledges) {
-      print(pledge);
-    }
 
-    return result.isNotEmpty;
+//   get events for user (dont return an object)
+  Future<List<Map<String, dynamic>>> getEventsForUserFriends(int userId) async {
+    try {
+      // Reference to the user's events node
+      final DatabaseReference eventsRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+
+      // Fetch the snapshot of the events node
+      final DataSnapshot snapshot = await eventsRef.get();
+
+      if (snapshot.exists) {
+        // Check if the data is a Map (Firebase often uses Map<dynamic, dynamic>)
+        if (snapshot.value is Map) {
+          // Convert the snapshot value to Map<String, dynamic>
+          final events = (snapshot.value as Map).values.map((event) {
+            // Ensure dynamic types are cast to Map<String, dynamic>
+            return Map<String, dynamic>.from(event as Map);
+          }).toList();
+
+          return events;
+        } else if (snapshot.value is List) {
+          // If the data is a List, convert each item to Map<String, dynamic>
+          final events = (snapshot.value as List)
+              .map((event) => Map<String, dynamic>.from(event as Map))
+              .toList();
+
+          return events;
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return [];
+        }
+      } else {
+        print("No events found for user $userId.");
+        return [];
+      }
+    } catch (e) {
+      print("Error fetching events for user $userId: $e");
+      throw e;
     }
+  }
+
+
+
 //     create a table to delete a pledge
     Future<void> deletePledge(int userId, int giftId) async {
     Database myData = await db;
@@ -390,12 +839,12 @@ class DatabaseService {
     Future<List<Map<String, dynamic>>> getUserPledgedGifts(int userId) async {
     Database myData = await db;
     // use join to get the gifts pledged by the user
-    return await myData.rawQuery('SELECT * FROM Gifts INNER JOIN Pledges ON Gifts.ID = Pledges.giftID WHERE Pledges.userID = $userId');
+    return await myData.rawQuery('SELECT * FROM Gifts INNER JOIN Pledges ON Gifts.giftid = Pledges.giftID WHERE Pledges.userID = $userId');
     }
 //     get event by gift id
     Future<Map<String, dynamic>?> getEventByGiftId(int giftId) async {
     Database myData = await db;
-    var result = await myData.rawQuery('SELECT * FROM Events WHERE ID IN (SELECT eventID FROM Gifts WHERE ID = $giftId)');
+    var result = await myData.rawQuery('SELECT * FROM Events WHERE eventId IN (SELECT eventID FROM Gifts WHERE giftid = $giftId)');
     return result.isNotEmpty ? result.first : null;
     }
 
@@ -403,18 +852,19 @@ class DatabaseService {
 //     get user by gift id
     Future<Map<String, dynamic>?> getUserbyGift(int giftId) async {
     Database myData = await db;
-    var result = await myData.rawQuery('SELECT * FROM Users WHERE ID IN (SELECT userID FROM Events WHERE ID IN (SELECT eventID FROM Gifts WHERE ID = $giftId))');
+    var result = await myData.rawQuery('SELECT * FROM Users WHERE userid IN (SELECT userID FROM Events WHERE eventId IN (SELECT eventID FROM Gifts WHERE giftid = $giftId))');
     return result.isNotEmpty ? result.first : null;
     }
   Future<List<Map<String, dynamic>>> getPledgedGiftsWithDetails(int userId) async {
     Database myData = await db;
+
     return await myData.rawQuery('''
-    SELECT Gifts.*, Events.name AS eventName, Events.date AS eventDate,
+    SELECT Gifts.*, Events.eventName AS eventName, Events.eventDate AS eventDate,
            Users.name AS friendName, Users.imageurl AS friendImageUrl
     FROM Gifts
-    INNER JOIN Pledges ON Gifts.ID = Pledges.giftID
-    INNER JOIN Events ON Events.ID = Gifts.eventID
-    INNER JOIN Users ON Users.ID = Events.userID
+    INNER JOIN Pledges ON Gifts.giftid = Pledges.giftID
+    INNER JOIN Events ON Events.eventId = Gifts.eventID
+    INNER JOIN Users ON Users.userid = Events.userID
     WHERE Pledges.userID = ?
   ''', [userId]);
   }
@@ -423,7 +873,7 @@ class DatabaseService {
     Database myData = await db;
     await myData.rawQuery('DELETE FROM Pledges WHERE userID = $userId AND giftID = $giftId');
   //   make the gift status false
-    await myData.rawQuery('UPDATE Gifts SET status = 0 WHERE ID = $giftId');
+    await myData.rawQuery('UPDATE Gifts SET pledged = 0 WHERE giftid = $giftId');
   }
 
 // update user data
@@ -431,19 +881,19 @@ class DatabaseService {
     Database myData = await db;
     await myData.rawUpdate('''
     UPDATE Users
-    SET name = ?, phonenumber = ?, email = ?, address = ?, preferences = ?, imageurl = ?
-    WHERE ID = ?
+    SET name = ?, phonenumber = ?, email = ?, address = ?, notification_preferences = ?, imageurl = ?
+    WHERE userid = ?
   ''', [
       userData['name'],
       userData['phonenumber'],
       userData['email'],
       userData['address'],
-      userData['preferences'],
+      userData['notification_preferences'],
       userData['imageurl'],
       userId,
     ]);
   //   print the user data after update
-    var result = await myData.rawQuery('SELECT * FROM Users WHERE ID = $userId');
+    var result = await myData.rawQuery('SELECT * FROM Users WHERE userid = $userId');
     print("result after update is $result");
   }
 

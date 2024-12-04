@@ -6,8 +6,14 @@ import 'event_list_page.dart';
 import 'profile_page.dart';
 import 'my_pledged_gifts_page.dart';
 import 'database.dart';
+import 'package:firebase_core/firebase_core.dart';
 
-void main() => runApp(MyApp());
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
 
@@ -77,10 +83,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         controller: _motionTabBarController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          HomePage(userid: 2, dbService: dbService),
-          EventListPage(userid: 2, db: dbService),
-          PledgedListPage(userid: 2, dbService: dbService),
-          ProfilePage(userid: 2, dbService: dbService),
+          HomePage(userid: 0, dbService: dbService),
+          EventListPage(userid: 0, db: dbService),
+          PledgedListPage(userid: 0, dbService: dbService),
+          ProfilePage(userid: 0, dbService: dbService),
           // EventListPage(userid: 1, db: dbService),
 
         ],

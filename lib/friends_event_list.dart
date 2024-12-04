@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:hedieatyfinalproject/database.dart';
 import 'package:intl/intl.dart';
+import 'friend_event.dart';
 import 'friends_gift_list.dart';
-import 'Event.dart';
 
 class FriendsEventList extends StatefulWidget {
   final Map<String, dynamic> frienddata;
@@ -19,8 +19,8 @@ class _FriendsEventListState extends State<FriendsEventList> {
   bool selectAll = false;
   final ScrollController _scrollController = ScrollController();
   bool isLoading = true;
-  List<Event> selectedEvents = [];
-  late List<Event> events;
+  List<friendEvent> selectedEvents = [];
+  late List<friendEvent> events;
 
   @override
   void initState() {
@@ -29,7 +29,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
 
   }
   void _loadEvents() async{
-    await widget.dbService.getAllEventsForUser(widget.frienddata['ID']).then((value) {
+    await widget.dbService.getAllEventsForUserFriends(widget.frienddata['userid']).then((value) {
       setState(() {
         events = value;
         isLoading = false;
@@ -44,7 +44,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
     });
   }
 
-  void _toggleEventSelection(Event event) {
+  void _toggleEventSelection(friendEvent event) {
     setState(() {
       if (selectedEvents.contains(event)) {
         selectedEvents.remove(event);
@@ -105,7 +105,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
     );
   }
 
-  Widget _buildEventCard(Event event) {
+  Widget _buildEventCard(friendEvent event) {
     bool isSelected = selectedEvents.contains(event);
 
     // Determine the icon based on the event status
@@ -144,7 +144,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FriendsGiftList(event: event ,userid: widget.userid, dbService: widget.dbService, friendid: widget.frienddata['ID'],),
+              builder: (context) => FriendsGiftList(event: event ,userid: widget.userid, dbService: widget.dbService, friendid: widget.frienddata['userid'],),
             ),
           );
         },
@@ -153,7 +153,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Event name with bigger font size and bold style
+              // friendEvent name with bigger font size and bold style
               Text(
                 event.name,
                 style: TextStyle(

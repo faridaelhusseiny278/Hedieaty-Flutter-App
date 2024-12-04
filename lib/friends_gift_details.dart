@@ -22,12 +22,12 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
   void initState() {
     super.initState();
     // Initialize controllers with the gift details
-    giftNameController = TextEditingController(text: widget.gift['name']);
+    giftNameController = TextEditingController(text: widget.gift['giftName']);
     descriptionController = TextEditingController(text: widget.gift['description'] ?? "");
     priceController = TextEditingController(text: widget.gift['price']?.toString() ?? "");
     imageURLController = TextEditingController(text: widget.gift['imageurl']?.toString() ?? "");
     selectedCategory = widget.gift['category'] ?? "Tech";
-    if (widget.gift['status'] == true || widget.gift['status'] == 1) {
+    if (widget.gift['pledged'] == true || widget.gift['pledged'] == 1) {
       isPledged = true;
     }
     else{
@@ -48,7 +48,7 @@ class _GiftDetailsPageState extends State<FriendsGiftDetails> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("${widget.gift['name']} Details"),
+        title: Text("${widget.gift['giftName']} Details"),
         backgroundColor: Colors.purple,
       ),
       body: SingleChildScrollView(
