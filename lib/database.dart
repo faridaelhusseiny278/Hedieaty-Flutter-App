@@ -197,6 +197,13 @@ class DatabaseService {
         },
     );
   }
+  // add user
+  Future<int> addUser(int userId, String name, String email, String phonenumber, String address, List<String> notification_preferences) async {
+    Database myData = await db;
+    int id= await myData.rawInsert("INSERT INTO Users (userid, name, email, phonenumber, address, notification_preferences) VALUES (?, ?, ?, ?, ?, ?)",
+        [userId, name, email, phonenumber, address, notification_preferences.join(",")]);
+    return id;
+  }
 
   Future<List<Map<String, dynamic>>> readData(String SQL) async {
     Database myData = await db;
@@ -1519,7 +1526,6 @@ class DatabaseService {
 
                   // Fetch the pledged gifts for the user
                   final DataSnapshot pledgedGiftsSnapshot = await pledgedGiftsRef.get();
-                  print("pledgedGiftsSnapshot is $pledgedGiftsSnapshot");
                   if (pledgedGiftsSnapshot.exists) {
                     print ("pledgedGiftsSnapshot exists");
                     print ("type of pledgedGiftsSnapshot is ${pledgedGiftsSnapshot.value.runtimeType}");
@@ -1593,7 +1599,11 @@ class DatabaseService {
                     }
                   }
                   else{
-                    print("No pledged gifts found for user $userId.");
+                  //   create a new pledged gift list
+                    print("pledgedGiftsSnapshot does not exist");
+                    if (status) {
+                      await pledgedGiftsRef.child(friendId.toString()).set([giftId]);
+                    }
                   }
                 }
               }

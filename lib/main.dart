@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/welcome_screen.dart';
 import 'package:motion_tab_bar/MotionTabBarController.dart';
 import 'package:motion_tab_bar/MotionTabBar.dart';
 import 'home_page.dart';
@@ -7,16 +8,18 @@ import 'profile_page.dart';
 import 'my_pledged_gifts_page.dart';
 import 'database.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+import 'signup_screen.dart';
+import 'package:flutter/rendering.dart'; // Check for this import
+import 'login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  debugPaintSizeEnabled = false;
   runApp(MyApp());
 }
 
 class MyApp extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -28,12 +31,15 @@ class MyApp extends StatelessWidget {
           secondary: const Color(0xFFB3E5FC),
         ),
       ),
-      home: MainScreen(),
+      home: WelcomeScreen(), // Start with LoginSignupScreen
     );
   }
 }
 
 class MainScreen extends StatefulWidget {
+  final int userId; // Accept userId as parameter
+
+  MainScreen({required this.userId});
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -42,33 +48,16 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late MotionTabBarController _motionTabBarController;
   DatabaseService dbService = DatabaseService();
-  List data = [];
 
   @override
   void initState() {
-
     super.initState();
     _motionTabBarController = MotionTabBarController(
-      initialIndex: 0, // Set initial index to 0 for the first tab
+      initialIndex: 0,
       length: 4,
       vsync: this,
     );
-
-
-
   }
-  Future readmyData(tableName) async{
-    List<Map> Response = await dbService.readData("SELECT * from $tableName");
-    data.addAll(Response);
-    print(data);
-    if (this.mounted){
-      setState(() {
-      });
-    }
-
-  }
-
-
 
   @override
   void dispose() {
@@ -83,18 +72,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         controller: _motionTabBarController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          HomePage(userid: 0, dbService: dbService),
-          EventListPage(userid: 0, db: dbService),
-          PledgedListPage(userid: 0, dbService: dbService),
-          ProfilePage(userid: 0, dbService: dbService),
-          // EventListPage(userid: 1, db: dbService),
-
+          HomePage(userid: widget.userId, dbService: dbService),
+          EventListPage(userid: widget.userId, db: dbService),
+          PledgedListPage(userid: widget.userId, dbService: dbService),
+          ProfilePage(userid: widget.userId, dbService: dbService),
         ],
       ),
       bottomNavigationBar: MotionTabBar(
         controller: _motionTabBarController,
         initialSelectedTab: "Home",
-        labels: const ["Events", "Home","Pledged Gifts", "Profile"],
+        labels: const ["Events", "Home", "Pledged Gifts", "Profile"],
         icons: const [
           Icons.calendar_month,
           Icons.home,
@@ -122,5 +109,5 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
 }
+

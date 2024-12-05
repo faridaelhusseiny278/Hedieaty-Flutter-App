@@ -33,6 +33,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final rawUser = await widget.dbService.getUserById(widget.userid);
       final rawEvents = await widget.dbService.getEventsForUser(widget.userid);
 
+
       events = [];
 
       for (var rawEvent in rawEvents) {
