@@ -52,11 +52,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    _syncDatabaseWithFirebase();
     _motionTabBarController = MotionTabBarController(
       initialIndex: 0,
       length: 4,
       vsync: this,
     );
+  }
+
+  void _syncDatabaseWithFirebase() async {
+    await dbService.syncDatabasewithFirebase(widget.userId);
   }
 
   @override

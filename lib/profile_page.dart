@@ -52,14 +52,18 @@ class _ProfilePageState extends State<ProfilePage> {
         emailController = TextEditingController(text: user['email']);
         phoneController = TextEditingController(text: user['phonenumber']);
         addressController = TextEditingController(text: user['address']);
-        emailNotification= user['notification_preferences'].contains('email');
-        pushNotification = user['notification_preferences'].contains('popup');
-        smsNotification = user['notification_preferences'].contains('sms');
+        emailNotification= user['notification_preferences'].contains('Email Notifications');
+        pushNotification = user['notification_preferences'].contains('Push Notifications');
+        smsNotification = user['notification_preferences'].contains('SMS Notifications');
 
       });
     } catch (e) {
       print('Error loading user data: $e');
     }
+  }
+  void _logout() {
+    // Navigate back to the login page
+    Navigator.pop(context);
   }
 
 
@@ -82,10 +86,23 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     return Scaffold(
       appBar: AppBar(
-        actions: [Icon(Icons.camera_alt_outlined)],
-        title: Text('Profile'),
+        actions: [
+          TextButton(
+            onPressed: _logout, // Call the logout function
+            child: const Text(
+              'Logout',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+        title: const Text('Profile'),
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.deepPurple,
       ),
+
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
         child: Column(
@@ -239,9 +256,9 @@ class _ProfilePageState extends State<ProfilePage> {
     user['address'] = addressController.text;
     List<String> preferences = [];
     print('pushNotification: $pushNotification');
-    if (pushNotification) preferences.add('popup');
-    if (emailNotification) preferences.add('email');
-    if (smsNotification) preferences.add('sms');
+    if (pushNotification) preferences.add('Push Notifications');
+    if (emailNotification) preferences.add('Email Notifications');
+    if (smsNotification) preferences.add('SMS Notifications');
     user['notification_preferences'] = preferences.join(', ');
 
     try {

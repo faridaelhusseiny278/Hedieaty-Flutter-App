@@ -55,6 +55,8 @@ class _PledgedListPageState extends State<PledgedListPage> {
           ),
         ),
         backgroundColor: Colors.deepPurple,
+        automaticallyImplyLeading: false,
+        leading: null,
       ),
       body: ListView.builder(
         itemCount: pledgedGifts.length,
@@ -74,9 +76,15 @@ class _PledgedListPageState extends State<PledgedListPage> {
                 // Circle avatar with the image
                 CircleAvatar(
                   radius: 32.0,
-                  backgroundImage: AssetImage(gift['friendImageUrl']),
+                  backgroundImage: gift['friendImageUrl'] != null
+                      ? AssetImage(gift['friendImageUrl'])
+                      : null,
                   backgroundColor: Colors.grey.shade200,
+                  child: gift['friendImageUrl'] == null
+                      ? Icon(Icons.person, color: Colors.grey.shade600)
+                      : null,
                 ),
+
                 const SizedBox(width: 16.0),
                 // Gift details card
                 Expanded(

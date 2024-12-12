@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 class GiftItem extends StatefulWidget {
   final int giftid;
+  final String friendName;
   final String giftName;
   final String category;
   final bool status;
@@ -13,6 +14,7 @@ class GiftItem extends StatefulWidget {
 
   GiftItem({
    required this.giftid,
+    required this.friendName,
     required this.giftName,
     required this.category,
     required this.status,
@@ -121,7 +123,7 @@ class _GiftItemState extends State<GiftItem> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          'Pledged',
+                          'Pledged by ${widget.friendName}',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,

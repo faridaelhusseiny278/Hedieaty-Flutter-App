@@ -161,6 +161,8 @@ class _CalendarPageState extends State<EventListPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
+        automaticallyImplyLeading: false,
+        leading: null,
         elevation: 0,
         title: Text(
           "My Events",

@@ -34,7 +34,7 @@ class DatabaseService {
     }
 
     // await deleteDatabase(path);
-
+    // print("database deleted");
     return await openDatabase(
       path,
       version: 1,
@@ -93,12 +93,14 @@ class DatabaseService {
         String insertUsersSQL = ''' 
     INSERT INTO Users (userid, name, phonenumber, email, address, notification_preferences, imageurl) 
     VALUES
-      (0, 'Alice', '+1234567890', 'alice@example.com', '123 Wonderland St, Fantasy City', 'email',"assets/istockphoto-1296058958-612x612.jpg"),
-      (1, 'Bob', '+1987654321', 'bob@example.com', '456 Oak Ave, Citytown', 'email, sms', "assets/istockphoto-1371904269-612x612.jpg"),
-      (2, 'Charlie', '+1122334455', 'charlie@example.com', '789 Pine Rd, Suburbia', 'sms, popup',"assets/istockphoto-1417086080-612x612.jpg"),
-      (3, 'David', '+1998765432', 'david@example.com', '12 Elm St, Downtown', 'email, popup',"assets/young-smiling-man-adam-avatar-600nw-2107967969.png"),
-      (4, 'Eve', '+1222333444', 'eve@example.com', '56 Maple Rd, Greenfield', 'sms, popup',"assets/young-smiling-woman-mia-avatar-600nw-2127358541.png"),
-      (5, 'Frank', '+1333444555', 'frank@example.com', 'frank@example.com', 'email, sms', "assets/istockphoto-1296058958-612x612.jpg")
+      (0, 'Alice in wondeland', '+1234567890', 'alice@example.com', '123 Wonderland St, Fantasy City', 'Push Notifications, Email Notifications, SMS Notifications',"assets/istockphoto-1296058958-612x612.jpg"),
+      (1, 'Bob', '+1987654321', 'bob@example.com', '456 Oak Ave, Citytown', 'Email Notifications, SMS Notifications', "assets/istockphoto-1371904269-612x612.jpg"),
+      (2, 'Charlie', '+1122334455', 'charlie@example.com', '789 Pine Rd, Suburbia', 'SMS Notifications, Push Notifications',"assets/istockphoto-1417086080-612x612.jpg"),
+      (3, 'David', '+1998765432', 'david@example.com', '12 Elm St, Downtown', 'Email Notifications, SMS Notifications',"assets/young-smiling-man-adam-avatar-600nw-2107967969.png"),
+      (4, 'Eve', '+1222333444', 'eve@example.com', '56 Maple Rd, Greenfield', 'SMS Notifications, Push Notifications',"assets/young-smiling-woman-mia-avatar-600nw-2127358541.png"),
+      (5, 'Frank', '+1333444555', 'frank@example.com', '88 Birch St, Lakeside', 'Email Notifications, Push Notifications', "assets/istockphoto-1296058958-612x612.jpg"),
+      (7, 'Farida', '+128456', 'Farida@example.com', '11 Maple St, Townville', 'SMS Notifications, Push Notifications', "assets/istockphoto-1296058958-612x612.jpg")
+     
   ''';
 
         await db.execute(insertUsersSQL);
@@ -109,11 +111,11 @@ class DatabaseService {
     INSERT INTO Events (eventId, eventName, eventDate, eventLocation, category, Status, userid, description)
     VALUES
       (1, 'Birthday Bash', '2024-12-10', 'Alice''s House', 'Birthday', 'Upcoming', 0, 'Alice''s 30th Birthday Celebration'),
-      (2, 'Wedding Anniversary', '2024-10-05', 'Luxury Hotel', 'Social', 'Past', 0, 'Celebrating Alice and her partner''s wedding anniversary'),
+      (2, 'Wedding Anniversary', '2024-10-05', 'Luxury Hotel', 'Social', 'past', 0, 'Celebrating Alice and her partner''s wedding anniversary'),
       (9, 'Housewarming Party', '2024-11-15', 'Alice''s New Home', 'Housewarming', 'Upcoming', 0, 'Alice''s Housewarming Party at her new place'),
       (10, 'Christmas Celebration', '2024-12-25', 'Alice''s House', 'Holiday', 'Upcoming', 0, 'Traditional family Christmas celebration'),
       (11, 'New Year Eve Party', '2024-12-31', 'City Center', 'Celebration', 'Upcoming', 0, 'City-wide New Year celebration'),
-      (3, 'Graduation Party', '2024-12-08', 'Bob''s College', 'Celebration', 'Current', 1, 'Bob''s graduation ceremony and party'),
+      (3, 'Graduation Party', '2024-11-29', 'Bob''s College', 'Celebration', 'Current', 1, 'Bob''s graduation ceremony and party'),
       (14, 'Housewarming Party', '2024-07-15', 'Bob''s New Apartment', 'Housewarming', 'Upcoming', 1, 'Housewarming party at Bob''s new apartment'),
       (15, 'Birthday Celebration', '2024-08-10', 'Bob''s Backyard', 'Birthday', 'Upcoming', 1, 'Bob''s birthday celebration at his backyard'),
       (16, 'New Year''s Eve Party', '2024-12-31', 'Bob''s House', 'Celebration', 'Upcoming', 1, 'Celebrating New Year''s Eve at Bob''s house'),
@@ -121,7 +123,8 @@ class DatabaseService {
       (4, 'Housewarming', '2024-12-01', 'Charlie''s New House', 'Social', 'Current', 2, 'Charlie''s housewarming event with friends'),
       (5, 'Christmas Party', '2024-12-25', 'David''s Apartment', 'Holiday', 'Upcoming', 3, 'Holiday party at David''s apartment'),
       (6, 'Baby Shower', '2025-01-15', 'Eve''s House', 'Celebration', 'Upcoming', 4, 'Eve''s baby shower party with close friends and family'),
-      (7, 'New Year Party', '2024-01-01', 'Frank''s Mansion', 'Celebration', 'Upcoming', 5, 'New Year party at Frank''s mansion')
+      (7, 'New Year Party', '2024-01-01', 'Frank''s Mansion', 'Celebration', 'Upcoming', 5, 'New Year party at Frank''s mansion'),
+      (8, 'Birthday', '2025-2-1', 'Farida''s House', 'Birthday', 'Upcoming', 7, 'My 21 Birthday')
   ''';
 
 
@@ -133,23 +136,24 @@ class DatabaseService {
     VALUES
       (1, 'Smartwatch', 'Tech', TRUE, 'https://example.com/smartwatch.jpg', 200.0, 'A sleek smartwatch with fitness tracking features.', 1),
       (2, 'Fitness Tracker', 'Health', TRUE, 'https://example.com/fitnesstracker.jpg', 50.0, 'A high-quality fitness tracker that helps monitor my workouts, heart rate, and daily activity.', 1),
-      (3, 'Romantic Dinner Voucher', 'Experience', FALSE, 'https://example.com/dinner.jpg', 150.0, 'A voucher for a romantic dinner at a 5-star restaurant.', 2),
-      (13, 'Wine Glass Set', 'Home', FALSE, 'https://example.com/wineglassset.jpg', 40.0, '', 9),
+      (3, 'Romantic Dinner Voucher', 'Experience', FALSE, 'https://example.com/dinner.jpg', 100.0, 'A voucher for a romantic dinner at a 5-star restaurant.', 2),
+      (13, 'Wine Glass Set', 'Home', FALSE, 'https://example.com/wineglassset.jpg', 40.0, 'None', 9),
       (14, 'Christmas Tree Decoration Set', 'Home', FALSE, 'https://example.com/christmasdecorations.jpg', 30.0, 'A complete set of decorations for the perfect Christmas tree.', 10),
       (15, 'Party Supplies', 'Event', FALSE, 'https://example.com/partysupplies.jpg', 50.0, 'A complete set of party supplies including balloons, decorations, and tableware, perfect for hosting a fun and memorable event.', 11),
-      (4, 'Laptop', 'Tech', TRUE, 'https://example.com/laptop.jpg', 1000.0, 'A powerful laptop for all my work and play needs.', 3),
-      (5, 'Camera', 'Tech', TRUE, 'https://example.com/camera.jpg', 500.0, 'A high-quality digital camera that captures stunning photos and videos.', 3),
+      (4, 'Laptop', 'Tech', FALSE, 'https://example.com/laptop.jpg', 1000.0, 'A powerful laptop for all my work and play needs.', 3),
+      (5, 'Camera', 'Tech', FALSE, 'https://example.com/camera.jpg', 500.0, 'A high-quality digital camera that captures stunning photos and videos.', 3),
       (16, 'Smart Home Speaker', 'Tech', FALSE, 'https://example.com/smartspeaker.jpg', 150.0, 'A cutting-edge smart speaker that integrates seamlessly with my home.', 14),
       (17, 'Home Decor Set', 'Home', FALSE, 'https://example.com/homedecor.jpg', 75.0, 'A stylish and elegant home decor set that includes decorative items such as candles, vases, and throw pillows.', 14),
       (18, 'Teddy Bear', 'Toys', FALSE, 'https://example.com/giftcard.jpg', 50.0, 'A soft and cuddly teddy bear made from plush fabric.', 15),
       (19, 'Party Decorations', 'Event', FALSE, 'https://example.com/partydecorations.jpg', 40.0, 'A complete set of vibrant party decorations, including balloons, banners, and streamers.', 16),
-      (20, 'Christmas Tree', 'Home', TRUE, 'https://example.com/christmastree.jpg', 100.0, 'A complete set of decorations for the perfect Christmas tree.', 17),
-      (6, 'Wine Glass Set', 'Home', TRUE, 'https://example.com/wineglasses.jpg', 40.0, '', 4),
+      (20, 'Christmas Tree', 'Home', FALSE, 'https://example.com/christmastree.jpg', 100.0, 'A complete set of decorations for the perfect Christmas tree.', 17),
+      (6, 'Wine Glass Set', 'Home', TRUE, 'https://example.com/wineglasses.jpg', 40.0, 'None', 4),
       (7, 'Bluetooth Speaker', 'Tech', TRUE, 'https://example.com/speaker.jpg', 120.0, 'A smart speaker that connects with your home devices.', 5),
       (8, 'Winter Jacket', 'Fashion', TRUE, 'https://example.com/jacket.jpg', 150.0, 'A stylish and warm winter jacket, perfect for keeping cozy during the cold season.', 5),
-      (9, 'Baby Stroller', 'Toys', TRUE, 'https://example.com/stroller.jpg', 300.0, 'A comfortable and secure baby stroller designed for easy mobility.', 6),
+      (9, 'Baby Stroller', 'Toys', FALSE, 'https://example.com/stroller.jpg', 300.0, 'A comfortable and secure baby stroller designed for easy mobility.', 6),
       (10, 'Baby Monitor', 'Toys', TRUE, 'https://example.com/monitor.jpg', 80.0, 'A high-quality baby monitor with video and audio capabilities.', 6),
-      (11, 'Portable Charger', 'Tech', TRUE, 'https://example.com/charger.jpg', 30.0, 'A portable charger that fits in your pocket for on-the-go power.', 7)
+      (11, 'Portable Charger', 'Tech', TRUE, 'https://example.com/charger.jpg', 25.0, 'A compact and powerful portable charger designed to keep my devices powered on the go.', 7),
+      (12, 'Smart Thermostat', 'Home', TRUE, 'https://example.com/thermostat.jpg', 200.0, 'None', 7)
   ''';
 
         await db.execute(insertGiftsSQL);
@@ -161,8 +165,9 @@ class DatabaseService {
     INSERT INTO Friends (userID, friendID)
     VALUES
       (0, 1), (0, 2), (0, 5), (0, 4), 
-      (0,3),
+      (0,3), (0,7), 
       (1, 2), (1, 5), (1, 3), 
+      (1,7),(1,4),
       (2, 3), (2, 5), (2,7),
       (3, 4), (3, 7), 
       (4, 5)
@@ -176,17 +181,16 @@ class DatabaseService {
         VALUES
         -- Alice's pledges
           (1, 1), -- Bob pledges to gift Alice a Smartwatch
-        (2, 2), -- Charlie pledges to gift Alice a Fitness Tracker
-        -- Bob's pledges
-        (4, 0), -- Alice pledges to gift Bob a Laptop
-        (20,0), -- Alice pledges to gift Bob a Christmas Tree
+          (2,1),
+        (6, 0), -- Alice pledges to gift Bob a Laptop
         (8,0 ), -- Alice pledges to gift Bob a Winter Jacket
         (7, 2), -- Charlie pledges to gift Bob a Camera
         (11,4), -- Eve pledges to gift Bob a Smart Home Speaker
         (12,4), -- Eve pledges to gift Bob a Home Decor Set
         (9,5), -- Frank pledges to gift Bob a Baby Stroller
         -- Charlie's pledges
-        (6, 3) -- David pledges to gift Charlie a Wine Glass Set
+        (6, 3),
+        (10,7) 
        
         
  ''' ;
@@ -197,6 +201,314 @@ class DatabaseService {
         },
     );
   }
+  // query table pledges to get the user id who pledged each gift which is an int
+  Future <int> getPledges(int giftid) async {
+    // delete from table table pledges where user id = 3 and gift id = 6
+    Database myData = await db;
+    int pledgedUser = await getPledgesFromFirebase(giftid);
+    print("pledgedUser from firebase is $pledgedUser");
+    List<Map<String, dynamic>> result = await myData.rawQuery('SELECT userID FROM Pledges WHERE giftID = $giftid');
+    if (result.isNotEmpty) {
+      return result.first['userID'] as int;
+    }
+    else {
+      return -1;
+    }
+  }
+  Future<int> getPledgesFromFirebase(int giftid) async {
+    final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
+    final DataSnapshot snapshot = await dbRef.get();
+
+    if (snapshot.exists) {
+      if (snapshot.value is List) {
+        // Look for pledged gifts of each user and if giftid matches the gift ID passed, then return the user ID
+        final usersList = snapshot.value as List;
+
+        for (var user in usersList)
+        {
+          if (user == null) {
+            continue;
+          }
+          if (user['pledgedgifts'] is List) {
+            print("pledgedgifts is list, for user id ${user['userid']}");
+            print("user['pledgedgifts'] is ${user['pledgedgifts']}");
+            final pledgedGifts = user['pledgedgifts'] as List;
+            for (var gifts in pledgedGifts) {
+              if (gifts == null) {
+                continue;
+              } else {
+                for (var gift in gifts) {
+                  if (gift == giftid) {
+                    print("yess gift is $gift and giftid is $giftid");
+                    return user['userid'] as int;
+                  }
+                }
+              }
+            }
+          }
+          else if (user['pledgedgifts'] is Map)
+          {
+            final pledgedGifts = user['pledgedgifts'] as Map;
+            print("pledgedGifts is $pledgedGifts for user id ${user['userid']}");
+            print("gift id is $giftid");
+            for (var key in pledgedGifts.keys)
+            {
+              var values = pledgedGifts[key];
+              if (values == null) {
+                continue;
+              }
+              print("values is $values");
+              for (var value in values) {
+                if (value==null){
+                  continue;
+                }
+                if (value == giftid) {
+                  print("value is $value");
+                  print("giftid is $giftid");
+                  return user['userid'] as int;
+                }
+              }
+            }
+          }
+        }
+        print("No match found in the users list, now returning -1");
+        return -1; // Return -1 if no match is found in the users list
+      }
+    } else {
+      print("Snapshot doesn't exist");
+      return -1; // Return -1 if the snapshot doesn't exist
+    }
+    print("Default return -1");
+    return -1; // Default return if no condition matches
+  }
+
+
+  Future <void> syncDatabasewithFirebase(int userid) async {
+    //   check if user data is the same
+    //   1- get all users from firebase
+    //   2- get all users from sqlite
+    //   3- compare the 2 lists
+    //   4- if the lists are not the same print the differences
+    //   5- if the lists are the same print "the data is the same"
+    final DatabaseReference dbRef = FirebaseDatabase.instance.ref(
+        "Users/$userid");
+    final DataSnapshot snapshot = await dbRef.get();
+    Database myData = await db;
+    if (snapshot.exists) {
+      if (snapshot.value is Map) {
+        final usersMap = Map<String, dynamic>.from(snapshot.value as Map);
+        // print("usersMap is $usersMap");
+        final List<Map<String, dynamic>> localUser = await myData.rawQuery(
+            'SELECT * FROM Users WHERE userid = ${usersMap['userid']}');
+        final Map<String, dynamic> result = localUser.first;
+        if (result['phonenumber'] != usersMap['phonenumber']) {
+          print("phonenumber is different for user ${usersMap['userid']}");
+        }
+        if (result['email'] != usersMap['email']) {
+          print("email is different for user ${usersMap['userid']}");
+        }
+        if (result['name'] != usersMap['name']) {
+          print("name is different for user ${usersMap['userid']}");
+        }
+        if (result['imageurl'] != usersMap['imageurl']) {
+          print("imageurl is different for user ${usersMap['userid']}");
+        }
+        if (result['address'] != usersMap['address']) {
+          print("address is different for user ${usersMap['userid']}");
+        }
+        for (var notification in usersMap['notification_preferences']) {
+          final normalizedNotification = notification.toString();
+          final List<String> normalizedDatabasePreferences = result['notification_preferences']
+              .toString()
+              .split(',')
+              .map((s) => s.trim()) // Trim each item to remove extra spaces
+              .toList();
+
+
+          if (!normalizedDatabasePreferences.contains(normalizedNotification)) {
+            print("user doesn't have $normalizedNotification notification preference");
+            print("Database Notifications: ${normalizedDatabasePreferences}");
+          }
+        }
+
+        //     now get the events for that user from the database
+        final List<Map<String, dynamic>> localEvents = await myData.rawQuery(
+            'SELECT * FROM Events WHERE userID = ${usersMap['userid']}');
+        // print("usersMap['events'] is ${usersMap['events']}");
+        if (usersMap['events'] is List) {
+          final List<Map<String, dynamic>> events =
+          (usersMap['events'] as List<dynamic>)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+          for (var event in events) {
+            final Map<String, dynamic> result = localEvents.firstWhere((
+                element) => element['eventId'] == event['eventId']);
+            if (result['eventName'] != event['eventName']) {
+              print(
+                  "eventName is different for event ${event['eventId']} for user ${usersMap['userid']}");
+            }
+            if (result['eventDate'] != event['eventDate']) {
+              print(
+                  "eventDate is different for event ${event['eventId']} for user ${usersMap['userid']}");
+            }
+            if (result['eventLocation'] != event['eventLocation']) {
+              print(
+                  "eventLocation is different for event ${event['eventId']} for user ${usersMap['userid']}");
+            }
+            String normalizedDatabaseDescription = result['description']
+                .replaceAll("''", "'");
+            String normalizedFirebaseDescription = event['description']
+                .replaceAll("''", "'");
+
+            if (normalizedDatabaseDescription !=
+                normalizedFirebaseDescription) {
+              print(
+                  "description is different for event ${event['eventId']} for user ${usersMap['userid']}");
+              print(
+                  "where the value of description in database is $normalizedDatabaseDescription and the value of description in firebase is $normalizedFirebaseDescription");
+            }
+            if (result['Status'] != event['Status']) {
+              print(
+                  "Status is different for event ${event['eventId']} for user ${usersMap['userid']}");
+            }
+            if (result['category'] != event['category']) {
+              print(
+                  "category is different for event ${event['eventId']} for user ${usersMap['userid']}");
+            }
+            //     now get the gifts for that event from the database
+            final List<Map<String, dynamic>> localGifts = await myData.rawQuery(
+                'SELECT * FROM Gifts WHERE eventID = ${event['eventId']}');
+            // print("event['gifts'] is ${event['gifts']}");
+            int pledged = 0;
+            final List<Map<String, dynamic>> gifts =
+            (event['gifts'] as List<dynamic>)
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList();
+            for (var gift in gifts) {
+              final Map<String, dynamic> result = localGifts.firstWhere((
+                  element) => element['giftid'] == gift['giftid']);
+              if (gift['pledged'] == true) {
+                pledged = 1;
+              }
+              else {
+                pledged = 0;
+              }
+              if (result['giftName'] != gift['giftName']) {
+                print(
+                    "giftName is different for gift ${gift['giftid']} for event ${event['eventId']} for user ${usersMap['userid']}");
+              }
+              if (result['category'] != gift['category']) {
+                print(
+                    "category is different for gift ${gift['giftid']} for event ${event['eventId']} for user ${usersMap['userid']}");
+              }
+              if (result['price'] != gift['price']) {
+                print(
+                    "price is different for gift ${gift['giftid']} for event ${event['eventId']} for user ${usersMap['userid']}");
+              }
+              if (result['imageurl'] != gift['imageurl']) {
+                print(
+                    "imageurl is different for gift ${gift['giftid']} for event ${event['eventId']} for user ${usersMap['userid']}");
+              }
+
+              String normalizedDatabaseDescription = result['description']
+                  .replaceAll("''", "'");
+              String normalizedFirebaseDescription = gift['description']
+                  .replaceAll("''", "'");
+              if (normalizedDatabaseDescription !=
+                  normalizedFirebaseDescription) {
+                print(
+                    "description is different for gift ${gift['giftid']} for event ${event['eventId']} for user ${usersMap['userid']}");
+                print(
+                    "where the value of description in database is $normalizedDatabaseDescription and the value of description in firebase is $normalizedFirebaseDescription");
+              }
+              if (result['pledged'] != pledged) {
+                print(
+                    "pledged is different for gift ${gift['giftid']} for event ${event['eventId']} for user ${usersMap['userid']}");
+                print(
+                    "where the value of pledged in database is ${result['pledged']} and the value of pledged in firebase is ${pledged}");
+              }
+            }
+          }
+        }
+
+
+        //   now compare the friends
+        final List<Map<String, dynamic>> localFriends = await myData.rawQuery(
+            'SELECT * FROM Friends WHERE userID = ${usersMap['userid']} or friendID = ${usersMap['userid']}');
+        // print("usersMap['friends'] is ${usersMap['friends']}");
+        List<int> friendListinDatabase = localFriends
+            .where((friend) => friend['userID'] == userid || friend['friendID'] == userid)
+            .map((friend) => friend['userID'] == userid ? friend['friendID'] as int : friend['userID'] as int)
+            .toList();
+
+
+        if (usersMap['friends'] is Map){
+          final List<int> friendsList = [];
+          usersMap['friends'].forEach((key, value) {
+            friendsList.add(value);
+          });
+
+          for (var friend in friendsList) {
+            if (!friendListinDatabase.contains(friend)) {
+              print("user ${usersMap['userid']} is not friends with user $friend");
+              print("where the friends in database are $friendListinDatabase and the friends in firebase are $friendsList");
+            }
+          }
+        }
+        else if (usersMap['friends'] is List){
+          for (var friend in usersMap['friends']) {
+            if (!friendListinDatabase.contains(friend)) {
+              print("user ${usersMap['userid']} is not friends with user $friend");
+              print("where the friends in database are $friendListinDatabase and the friends in firebase are ${usersMap['friends']}");
+            }
+          }
+        }
+
+
+
+      //   now compare the pledgedgifts
+          final List<Map<String, dynamic>> localPledges = await myData.rawQuery('SELECT * FROM Pledges WHERE userID = ${usersMap['userid']}');
+          final List<int> pledgedGifts = localPledges.map((e) => e['giftID'] as int).toList();
+          print("pledged gifts in database are $pledgedGifts");
+          print("pledged gifts in firebase are ${usersMap['pledgedgifts']}");
+          if (usersMap['pledgedgifts'] is List) {
+            for (var pledges in usersMap['pledgedgifts']) {
+              if (pledges == null) {
+                continue;
+              }
+              for (var gift in pledges) {
+                if (!pledgedGifts.contains(gift)) {
+                  print(
+                      "user ${usersMap['userid']} didn't pledge for gift ${gift}");
+                }
+              }
+            }
+          }
+          else if (usersMap['pledgedgifts'] is Map) {
+            final List<int> pledgedGifts_firebase = [];
+            usersMap['pledgedgifts'].forEach((key, value) {
+              for (var gift in value) {
+                pledgedGifts_firebase.add(gift);
+              }
+            });
+            for (var gift in pledgedGifts_firebase) {
+              if (!pledgedGifts.contains(gift)) {
+                print(
+                    "user ${usersMap['userid']} didn't pledge for gift ${gift}");
+              }
+            }
+          }
+
+      }
+      else if (snapshot.value is List) {
+        print("users list value is list");
+      }
+    }
+  }
+
+
+
+  // close the braces
   // add user
   Future<int> addUser(int userId, String name, String email, String phonenumber, String address, List<String> notification_preferences) async {
     Database myData = await db;
@@ -268,8 +580,30 @@ class DatabaseService {
     try {
       final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
 
+      // get the ids of all the events in this user node and set the new event with the highest id+1
+      // but first check if event is list , if so set the id to the length +1
+      // but if its a map set the id to the last key +1
+      int EventId_for_firebase = 0;
+
+      final DataSnapshot snapshot = await dbRef.get();
+      if (snapshot.exists) {
+        if (snapshot.value is Map) {
+          final eventsMap = Map<String, dynamic>.from(snapshot.value as Map);
+          final List<int> eventIds = eventsMap.keys.map((e) => int.parse(e)).toList();
+          EventId_for_firebase = eventIds.isEmpty ? 1 : eventIds.reduce((value, element) => value > element ? value : element) + 1;
+        } else if (snapshot.value is List) {
+          final List<dynamic> rawEvents = snapshot.value as List;
+          EventId_for_firebase = rawEvents.length ;
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+        }
+      }
+      else {
+        EventId_for_firebase = 0;
+      }
+
       // Add the event to the user's events list
-      await dbRef.push().set({
+      await dbRef.child("${EventId_for_firebase.toString()}").set({
         'eventId': EventId,
         'eventName': event.name,
         'category': event.category,
@@ -277,7 +611,6 @@ class DatabaseService {
         'eventLocation': event.location,
         'description': event.description,
         'Status': event.status,
-        'gifts': {},
       });
     } catch (e) {
       print("Error adding event: $e");
@@ -295,9 +628,19 @@ class DatabaseService {
     return id;
   }
   Future<void> addGiftForUserinFirebase(Map<String, dynamic> gift, int userId, int giftId) async {
+
+    Database myData = await db;
+
+
+
+
+    print("query executed");
+
     try {
       final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
+
+      int giftId_for_firebase = 0;
 
       if (snapshot.exists) {
         if (snapshot.value is Map) {
@@ -309,12 +652,17 @@ class DatabaseService {
           eventsMap.forEach((key, value) {
             if (value is Map && value['eventId'] == gift['eventID']) {
               eventKey = key;
+              if (value['gifts'] == null) {
+                giftId_for_firebase = 0;
+              } else {
+                giftId_for_firebase = value['gifts'].length;
+              }
             }
           });
 
           if (eventKey != null) {
             // Add the gift to the 'gifts' list under the specified event
-            await dbRef.child("$eventKey/gifts").push().set({
+            await dbRef.child("$eventKey/gifts/${giftId_for_firebase.toString()}").set({
               'giftid': giftId,
               'giftName': gift['giftName'],
               'category': gift['category'],
@@ -327,7 +675,8 @@ class DatabaseService {
           } else {
             print("No matching event found for eventID ${gift['eventID']} for user $userId");
           }
-        } else if (snapshot.value is List) {
+        }
+        else if (snapshot.value is List) {
           print("snapshot value is list");
           final rawEvents = snapshot.value as List;
 
@@ -336,13 +685,18 @@ class DatabaseService {
             final event = rawEvents[i];
             if (event is Map && event['eventId'] == gift['eventID']) {
               eventIndex = i.toString();
+              if (event['gifts'] == null) {
+                giftId_for_firebase = 0;
+              } else {
+                giftId_for_firebase = event['gifts'].length;
+              }
               break;
             }
           }
 
           if (eventIndex != null) {
             // Add the gift to the 'gifts' list under the specified event
-            await dbRef.child("$eventIndex/gifts").push().set({
+            await dbRef.child("$eventIndex/gifts/${giftId_for_firebase.toString()}").set({
               'giftid': giftId,
               'giftName': gift['giftName'],
               'category': gift['category'],
@@ -462,7 +816,7 @@ class DatabaseService {
             print("No matching event found for eventId ${event.id}");
           }
         } else if (snapshot.value is List) {
-          print("snapshot value is list");
+          print("snapshot value in update event is list");
           // Handle the case where the value is a list (in case of other data formats)
           final rawEvents = snapshot.value as List;
 
@@ -588,7 +942,7 @@ class DatabaseService {
             print("No matching gift found with id $giftid for userId $userId");
           }
         } else if (snapshot.value is List) {
-          print("snapshot value is list");
+          print("snapshot value in update gifts is list");
           final rawEvents = snapshot.value as List;
 
           String? eventIndexToUpdate;
@@ -596,11 +950,10 @@ class DatabaseService {
 
           for (var i = 0; i < rawEvents.length; i++) {
             final event = rawEvents[i];
-            print("event is $event");
             if (event is Map && event.containsKey('gifts')) {
               if(event['gifts'] is List){
                 final giftsList = event['gifts'] as List;
-                print("gift List os $giftsList");
+                print("gift List is $giftsList");
                 for (var j = 0; j < giftsList.length; j++) {
                   if (giftsList[j] == null || giftsList[j] is! Map) {
                     print ("giftsList[j] is null or not a map, ${giftsList[j]}");
@@ -678,14 +1031,17 @@ class DatabaseService {
           final friends = (snapshot.value as Map).values.map((e) => int.parse(e.toString())).toList();
           return friends;
         } else if (snapshot.value is List) {
-          // If the data is a List, handle as a list of friend IDs
-          final friends = List<int>.from(snapshot.value as List);
+          // If the data is a List, handle as a list and extract the friend IDs
+          print("friends snapshot value is a list and it is  ${snapshot.value}");
+          // filter null from the friend ids before returning them
+          final friends = (snapshot.value as List).where((e) => e != null).map((e) => int.parse(e.toString())).toList();
           return friends;
         } else {
           print("Unexpected data format: ${snapshot.value}");
           return [];
         }
-      } else {
+      }
+      else {
         print("No friends found for this user.");
         return [];
       }
@@ -802,7 +1158,7 @@ class DatabaseService {
           final users = (snapshot.value as Map).values.map((user) {
             return Map<String, dynamic>.from(user as Map);
           }).toList();
-          print("users are $users");
+          // print("users are $users");
 
           for (var user in users) {
             if (user['phonenumber'] == phoneNumber) {
@@ -847,12 +1203,41 @@ class DatabaseService {
 
       // Reference to the friend's friends node
       final DatabaseReference friendFriendsRef = FirebaseDatabase.instance.ref("Users/$friendId/friends");
+      int current_user_friendId_in_firebase = 0;
+      int friend_friendId_in_firebase = 0;
 
-      // Add the friendId to the user's friends list
-      await userFriendsRef.push().set(friendId);
+      final DataSnapshot snapshot = await userFriendsRef.get();
+      if (snapshot.exists) {
+        if (snapshot.value is Map)
+        {
+          final user_friends_Map = Map<String, dynamic>.from(snapshot.value as Map);
+          final List<int> current_user_friendIds = user_friends_Map.values.map((e) => int.parse(e.toString())).toList();
+          current_user_friendId_in_firebase = current_user_friendIds.isEmpty ? 0 : current_user_friendIds.reduce((value, element) => value > element ? value : element) + 1;
+        }
+        else if
+        (snapshot.value is List) {
+          final List<dynamic> user_friends_ids = snapshot.value as List;
+          current_user_friendId_in_firebase = user_friends_ids.length+1;
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+        }
+      }
+      await userFriendsRef.child(current_user_friendId_in_firebase.toString()).set(friendId);
 
-      // Add the userId to the friend's friends list
-      await friendFriendsRef.push().set(userId);
+      final DataSnapshot friendSnapshot = await friendFriendsRef.get();
+      if (friendSnapshot.exists) {
+        if (friendSnapshot.value is Map) {
+          final friendsMap = Map<String, dynamic>.from(friendSnapshot.value as Map);
+          final List<int> friendIds = friendsMap.values.map((e) => int.parse(e.toString())).toList();
+          friend_friendId_in_firebase = friendIds.isEmpty ? 0 : friendIds.reduce((value, element) => value > element ? value : element) + 1;
+        } else if (friendSnapshot.value is List) {
+          final List<dynamic> friendIds = friendSnapshot.value as List;
+          friend_friendId_in_firebase = friendIds.length+1 ;
+        } else {
+          print("Unexpected data format: ${friendSnapshot.value}");
+        }
+      }
+      await friendFriendsRef.child(friend_friendId_in_firebase.toString()).set(userId);
 
       print("Friendship added: $userId and $friendId are now friends.");
     } catch (e) {
@@ -862,6 +1247,12 @@ class DatabaseService {
   }
   Future<void> addFriendinDatabase(int userId, int friendId) async{
     Database myData = await db;
+    // check if the entry exists in the database if so then delete it
+    // select from table friends
+    var result = await myData.rawQuery("SELECT * FROM Friends WHERE userID = $userId AND friendID = $friendId OR userID = $friendId AND friendID = $userId");
+    print("result is $result");
+    await myData.rawQuery("DELETE FROM Friends WHERE userID = $userId AND friendID = $friendId OR userID = $friendId AND friendID = $userId");
+
     await myData.rawInsert(
       'INSERT INTO Friends (userID, friendID) VALUES (?, ?)',
       [userId, friendId],
@@ -1260,10 +1651,10 @@ class DatabaseService {
     return await myData.rawQuery('SELECT * FROM Gifts INNER JOIN Pledges ON Gifts.giftid = Pledges.giftID WHERE Pledges.userID = $userId');
     }
 //     get event by gift id
-    Future<Map<String, dynamic>?> getEventByGiftId(int giftId) async {
+    Future<Map<String, dynamic>> getEventByGiftId(int giftId) async {
     Database myData = await db;
     var result = await myData.rawQuery('SELECT * FROM Events WHERE eventId IN (SELECT eventID FROM Gifts WHERE giftid = $giftId)');
-    return result.isNotEmpty ? result.first : null;
+    return result.first ;
     }
 
 
@@ -1273,6 +1664,22 @@ class DatabaseService {
     var result = await myData.rawQuery('SELECT * FROM Users WHERE userid IN (SELECT userID FROM Events WHERE eventId IN (SELECT eventID FROM Gifts WHERE giftid = $giftId))');
     return result.isNotEmpty ? result.first : null;
     }
+  Future<void> printDatabase() async {
+    final db = await openDatabase('hedeaty.db');
+    // Replace 'tableName' with the name of the table you want to print
+    final tables = await db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'");
+
+    for (var table in tables) {
+      final tableName = table['name'];
+      if (tableName == 'sqlite_sequence') continue; // Skip system table
+      print('Data from table: $tableName');
+      final results = await db.rawQuery('SELECT * FROM $tableName');
+      for (var row in results) {
+        print(row);
+      }
+    }
+  }
+
 
   Future<List<Map<String, dynamic>>> getPledgedGiftsWithDetailsfromDatabase(int userId) async {
     Database myData = await db;
@@ -1458,18 +1865,13 @@ class DatabaseService {
     Database myData = await db;
 
     await myData.rawUpdate('UPDATE Gifts SET pledged = ? WHERE giftid = ?', [status==true? 1:0, giftId]);
-    var result = await myData.rawQuery('SELECT * FROM Gifts WHERE giftid = $giftId');
-    print("result after update is $result");
+
     if (status) {
       await myData.rawInsert('INSERT INTO Pledges (giftID, userID) VALUES (?, ?)', [giftId, userId]);
     } else {
       await myData.rawDelete('DELETE FROM Pledges WHERE giftID = $giftId AND userID = $userId');
     }
-    var pledges = await myData.rawQuery('SELECT * FROM Pledges');
-    print("pledges after update is $pledges");
-    for (var pledge in pledges) {
-      print(pledge);
-    }
+
 
 
   }
@@ -1491,11 +1893,9 @@ class DatabaseService {
           print("event snapshot value is list");
           final List<dynamic> eventsList = eventsSnapshot.value as List<dynamic>;
 
-          // Iterate over the list of events
           for (int eventIndex = 0; eventIndex < eventsList.length; eventIndex++) {
             final eventData = eventsList[eventIndex];
 
-            // Skip null entries
             if (eventData == null) continue;
 
             // Check if the event contains gifts
@@ -1528,9 +1928,9 @@ class DatabaseService {
                   final DataSnapshot pledgedGiftsSnapshot = await pledgedGiftsRef.get();
                   if (pledgedGiftsSnapshot.exists) {
                     print ("pledgedGiftsSnapshot exists");
-                    print ("type of pledgedGiftsSnapshot is ${pledgedGiftsSnapshot.value.runtimeType}");
                     if (pledgedGiftsSnapshot.value is List)
                     {
+                    print("pledgedGiftsSnapshot value is ${pledgedGiftsSnapshot.value}");
                     final pledgedGiftsListunmodifiable = pledgedGiftsSnapshot.value as List<dynamic>;
                     print("pledgedGiftsListunmodifiable is $pledgedGiftsListunmodifiable");
                     // shallow copy to another modifiable list
@@ -1542,15 +1942,23 @@ class DatabaseService {
                     print("pledgedGiftsList is $pledgedGiftsList");
                     if (status) {
                       // Ensure the index exists before accessing it
-                      if (friendId < pledgedGiftsList.length) {
-                        if (!pledgedGiftsList[friendId].contains(giftId)) {
-                          pledgedGiftsList[friendId].add(giftId);
-                          await pledgedGiftsRef.set(pledgedGiftsList);
-                        }
-                      } else {
-                        print("Friend ID index out of bounds.");
-                      }
-                    } else {
+                       print("now adding the gift id $giftId to the list of friend $friendId");
+
+
+                       if (friendId >= pledgedGiftsList.length) {
+                         await pledgedGiftsRef.child(friendId.toString()).set(
+                             [giftId]);
+                       }
+                       else {
+                         if (!pledgedGiftsList[friendId].contains(giftId)) {
+                           pledgedGiftsList[friendId].add(giftId);
+                           await pledgedGiftsRef.child(friendId.toString()).set(
+                               pledgedGiftsList[friendId]);
+                         }
+                       }
+
+                    }
+                    else {
                       if (friendId < pledgedGiftsList.length) {
                         print ("pledgedGiftslist at the index is ${pledgedGiftsList[friendId]}");
                         pledgedGiftsList[friendId].remove(giftId);
@@ -1656,6 +2064,10 @@ class DatabaseService {
 }
 Future<void> updateUserDatainFirebase(int userId, Map<String, dynamic> userData) async {
 try{
+  // convert user preferences ( a comma separated string) to a list
+  if (userData.containsKey("notification_preferences")) {
+    userData["notification_preferences"] = (userData["notification_preferences"] as String).split(",");
+  }
   // Reference to the user's node
   final DatabaseReference userRef = FirebaseDatabase.instance.ref("Users/$userId");
 

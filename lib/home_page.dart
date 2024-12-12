@@ -40,12 +40,17 @@ class _HomePageState extends State<HomePage> {
     print("in init state of home page now!");
     super.initState();
     _loadFriendsList();
+    _printDatabase();
 
     _searchController.addListener(() {
 
         _filterFriendsList(_searchController.text);
 
     });
+  }
+  Future <void> _printDatabase() async {
+
+    await widget.dbService.printDatabase();
   }
 
   Future<void> _loadFriendsList() async {
@@ -211,7 +216,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // Check if the potential friend is already in the user's friends list
     var currentFriendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
     print("current friend ids: $currentFriendsIds for user: ${widget.userid}");
 

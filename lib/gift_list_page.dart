@@ -18,27 +18,66 @@ class _GiftListPage extends State<GiftListPage> {
   String selectedFilter = 'giftName'; // Default filter is gift name
   List<Map<String, dynamic>> filteredGifts = [];
   List<Map<String, dynamic>> allGifts = [];
+  List<Map<String, dynamic>> pledges = [];
   TextEditingController giftNameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
   String selectedCategory = "Tech"; // Default value
+  bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    //loop on all gifts and add them to the filteredGifts list if the event id is the same as the event id of the current event
-    dbService.readData("SELECT * from Gifts").then((value) {
-      value.forEach((element) {
+    _loadAllGifts();
+  }
+
+
+
+  Future<void> _loadAllGifts() async {
+    try {
+      // Fetch all gifts from the database
+      List<Map<String, dynamic>> value = await dbService.readData("SELECT * from Gifts");
+
+      for (var element in value) {
         if (element['eventID'] == widget.eventid) {
-          print("element is $element");
+          // Create a modifiable copy of the element
+          Map<String, dynamic> modifiableElement = Map<String, dynamic>.from(element);
+
+
+          // Fetch pledges for the gift
+          var friendId = await dbService.getPledges(modifiableElement['giftid']);
+          if (friendId != -1) {
+            // get friend name from the database by the friend id
+            List<Map> Response = await dbService.readData(
+                "SELECT * from Users");
+            for (int i = 0; i < Response.length; i++) {
+              if (Response[i]['userid'] == friendId) {
+                modifiableElement['pledgedby'] = Response[i]['name'];
+              }
+            }
+          }
+          else {
+            modifiableElement['pledgedby'] = '';
+          }
+
+          // Update the UI with the filtered gifts
           setState(() {
-            filteredGifts.add(element);
-            print("filtered gifts in init is $filteredGifts");
-            allGifts.add(element);
+            filteredGifts.add(modifiableElement);
+            allGifts.add(modifiableElement);
           });
         }
-      });
-    });
+
+      }
+    } catch (e) {
+      print("Error loading gifts: $e");
+    } finally {
+      // Set the loading flag to false after processing all gifts
+      loading = false;
+    }
+
+    print("All filtered gifts loaded: $filteredGifts");
   }
+
+
   // get the event name from the database by the event id
   Future<String> getEventName() async {
     List<Map> Response = await dbService.readData("SELECT * from Events");
@@ -144,6 +183,30 @@ class _GiftListPage extends State<GiftListPage> {
                 children: [
                   ElevatedButton(
                     onPressed: () async {
+                      if (filteredGifts[index]['pledged'] == true || filteredGifts[index]['pledged'] == 1) {
+                      //   can't remove the gift because it has been pledged by someone
+                      //   show an alert dialog to inform the user
+                        showDialog(
+                          context: context,
+                          builder: (context) {
+                            return AlertDialog(
+                              title: Text('Gift is pledged'),
+                              content: Text(
+                                'You can\'t delete a gift that has been pledged. '
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(); // Close the dialog
+                                  },
+                                  child: Text('OK'),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                        return;
+                      }
                       // remove the gift from the event's gifts in the database
                       Map<String, dynamic> giftToRemove = filteredGifts[index];
                       await dbService.deleteGiftsForUser(giftToRemove['giftid'], widget.userid, widget.eventid);
@@ -178,6 +241,10 @@ class _GiftListPage extends State<GiftListPage> {
   }
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      // Show loading indicator while data is loading
+      return Center(child: CircularProgressIndicator());
+    }
     return Scaffold(
       appBar: AppBar(
       title: FutureBuilder<String>(
@@ -326,6 +393,7 @@ class _GiftListPage extends State<GiftListPage> {
 
                       return GiftItem(
                         giftid: gift['giftid'],
+                        friendName: gift['pledgedby'],
                         giftName: gift['giftName'],
                         category: gift['category'],
                           status: (gift['pledged'] == 0 || gift['pledged'] == false) ? false : true,
