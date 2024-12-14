@@ -54,10 +54,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     super.initState();
     _syncDatabaseWithFirebase();
     _motionTabBarController = MotionTabBarController(
-      initialIndex: 0,
+      initialIndex: 1,
       length: 4,
       vsync: this,
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _motionTabBarController.index = 1;
+      });
+    });
   }
 
   void _syncDatabaseWithFirebase() async {
@@ -77,8 +82,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         controller: _motionTabBarController,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          HomePage(userid: widget.userId, dbService: dbService),
           EventListPage(userid: widget.userId, db: dbService),
+          HomePage(userid: widget.userId, dbService: dbService,motionTabBarController: _motionTabBarController),
           PledgedListPage(userid: widget.userId, dbService: dbService),
           ProfilePage(userid: widget.userId, dbService: dbService),
         ],

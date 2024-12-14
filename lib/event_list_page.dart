@@ -4,6 +4,9 @@ import 'gift_list_page.dart';
 import 'package:intl/intl.dart';
 import 'Event.dart';
 import 'database.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class EventListPage extends StatefulWidget {
   final int userid;
@@ -15,6 +18,7 @@ class EventListPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<EventListPage> {
+  List<Map<String, dynamic>> actions = [];
   Event? highlightedEvent;
   DateTime selectedDate = DateTime.now();
   DateTime firstDayOfMonth = DateTime(DateTime
@@ -30,19 +34,45 @@ class _CalendarPageState extends State<EventListPage> {
   bool showCalendar = true;
   bool selectAll = false;
   final ScrollController _scrollController = ScrollController();
+  bool loading = true;
 
   List<Event> selectedEvents = [];
+  List<Event> DeletedEvents = [];
   late List<Event> events=[];
 
   @override
   void initState() {
     super.initState();
 
-    final userData = widget.db.getUserById(widget.userid);
-    if (userData != null) {
-      _initializeEvents();
-    }
+    _initializeEvents();
+
+    _loadActions(widget.userid).then((value) {
+      // Directly assign the list returned from _loadActions
+      actions = value ?? [];
+    });
   }
+  Future<void> deleteActions(List<Map<String, dynamic>> actions) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_${widget.userid.toString()}_events_actions');
+  }
+
+
+  Future<List<Map<String, dynamic>>> _loadActions(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    // if (prefs.getString('user_${widget.userid.toString()}_events_actions') != null) {
+    //   await prefs.remove('user_${widget.userid.toString()}_events_actions');
+    // }
+    final jsonString = prefs.getString('user_${userId.toString()}_events_actions');
+    setState(() {
+      loading = false;
+    });
+    print("jsonString in event list is : $jsonString");
+    return jsonString != null
+        ? List<Map<String, dynamic>>.from(jsonDecode(jsonString))
+        : [];
+  }
+
+
   Future<void> _initializeEvents() async {
     // Fetch events asynchronously
     final fetchedEvents = await widget.db.getAllEventsForUser(widget.userid);
@@ -85,6 +115,14 @@ class _CalendarPageState extends State<EventListPage> {
     });
   }
 
+  Future<void> saveActions(List<Map<String, dynamic>> actions) async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentActionsString = prefs.getString('user_${widget.userid.toString()}_events_actions');
+    print("currentActionsString in event list is  : $currentActionsString");
+    await prefs.setString('user_${widget.userid.toString()}_events_actions', jsonEncode(actions));
+    print("currentActions in event list is after saving  : ${prefs.getString('user_${widget.userid.toString()}_events_actions')}");
+  }
+
   void _addOrEditEvent({Event? event}) async {
     showModalBottomSheet(
       context: context,
@@ -99,6 +137,12 @@ class _CalendarPageState extends State<EventListPage> {
             if (eventId > 0) {
               // Set the generated ID from the database
               newEvent.id = eventId;
+              actions.add({
+                'action': 'add',
+                'event': newEvent.toJson()
+              });
+              // call save actions
+              saveActions(actions);
 
               // Update the local list
               setState(() {
@@ -112,6 +156,14 @@ class _CalendarPageState extends State<EventListPage> {
             // Modifying an existing event
             int index = events.indexOf(event);
             events[index] = newEvent;
+            actions.add({
+              'action': 'update',
+              'oldEvent': event.toJson(),
+              'newEvent': newEvent.toJson()
+            });
+            // call save actions
+            saveActions(actions);
+
 
             // Update the event in the database
             await widget.db.updateEventForUser(widget.userid, newEvent);
@@ -133,31 +185,69 @@ class _CalendarPageState extends State<EventListPage> {
 
 
 
+  void _publishToFirebase() async {
+
+   for (var action in actions) {
+      if (action['action'] == 'add') {
+        // convert event json to event object
+        await widget.db.addEventForUserinFirebase(Event.fromMap(action['event']),widget.userid, action['event']['eventId']);
+
+      } else if (action['action'] == 'update') {
+        await widget.db.updateEventForUserinFirebase(Event.fromMap(action['newEvent']), widget.userid);
+      } else if (action['action'] == 'delete') {
+        print("delete event ${action}");
+        for (var event in action['events']) {
+          DeletedEvents.add(Event.fromMap(event));
+        }
+        await widget.db.deleteEventsForUserinFirebase(widget.userid, DeletedEvents);
+        DeletedEvents.clear();
+      }
+    }
+   actions.clear();
+    deleteActions(actions);
+   ScaffoldMessenger.of(context).showSnackBar(
+     SnackBar(content: Text("Events published in Firebase successfully!")),
+   );
+  }
+
+
+
   void _deleteSelectedEvents() async {
     // Remove selected events from the database
     await widget.db.deleteEventsForUser(widget.userid, selectedEvents);
+    actions.add({
+      'action': 'delete',
+      'events': selectedEvents.map((event) => event.toJson()).toList()
+    });
+    // call save actions
+    saveActions(actions);
 
 
-      setState(() {
-        // Remove selected events from the UI events list
-        events.removeWhere((event) => selectedEvents.contains(event));
-
-        // Clear the selected events and reset selectAll flag
-        selectedEvents.clear();
-        selectAll = false;
-      });
-
+    setState(() {
+      events.removeWhere((event) => selectedEvents.contains(event));
+      // copy the selected events to the deleted events list (deep copy)
+      selectedEvents.clear();
+      selectAll = false;
+    });
   }
 
 
 
   @override
   Widget build(BuildContext context) {
+    if (loading){
+      return Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
     DateTime today = DateTime.now();
     List<DateTime> dates = [];
     for (int i = 0; i <= lastDayOfMonth.day - firstDayOfMonth.day; i++) {
       dates.add(firstDayOfMonth.add(Duration(days: i)));
     }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.deepPurple,
@@ -186,11 +276,40 @@ class _CalendarPageState extends State<EventListPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: _buildEventsListView(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Publish Button
+            ElevatedButton(
+              onPressed: _publishToFirebase, // Call your publish function here
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple, // Button background color
+                foregroundColor: Colors.white, // Button text color
+                padding: EdgeInsets.symmetric(vertical: 16.0), // Larger button height
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0), // Rounded corners
+                ),
+              ),
+              child: Text(
+                'Publish Events',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+            SizedBox(height: 16.0), // Spacing between button and list
+            // Events List View
+            Expanded(child: _buildEventsListView()),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomNavBar(),
     );
   }
+
+
 
 
   Widget _buildEventsListView() {
@@ -476,7 +595,7 @@ class _EventFormState extends State<EventForm> {
                   ? _statusController.text
                   : null,
               decoration: InputDecoration(labelText: 'Status'),
-              items: ['Upcoming', 'Current', 'Past']
+              items: ['Upcoming', 'Current', 'past']
                   .map((status) => DropdownMenuItem(
                 value: status,
                 child: Text(status),

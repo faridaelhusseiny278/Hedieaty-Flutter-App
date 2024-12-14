@@ -6,6 +6,8 @@ import 'friends_event_list.dart';
 import 'createEvent.dart';
 import 'database.dart';
 import 'dart:async';
+import 'package:motion_tab_bar/MotionTabBarController.dart';
+
 class Friend {
   final String name;
   final int eventCount;
@@ -17,8 +19,10 @@ class Friend {
 class HomePage extends StatefulWidget {
   final int userid;
   DatabaseService dbService = DatabaseService();
+  // initialize _motionTabBarController
+  late MotionTabBarController motionTabBarController;
 
-  HomePage({required this.userid, required this.dbService});
+  HomePage({required this.userid, required this.dbService, required this.motionTabBarController});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -347,6 +351,9 @@ class _HomePageState extends State<HomePage> {
                                   ),
                             ),
                           );
+                          setState(() {
+                              widget.motionTabBarController.index = 0;
+                            });
                         },
                       ),
                     ],

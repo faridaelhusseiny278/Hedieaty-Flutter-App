@@ -2,9 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:hedieatyfinalproject/event_list_page.dart';
 import 'database.dart';
 import 'Event.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:motion_tab_bar/MotionTabBarController.dart';
+
 
 class CreateEventPage extends StatefulWidget {
   final int userid;
+
+
 
   CreateEventPage({required this.userid});
   @override
@@ -13,11 +19,20 @@ class CreateEventPage extends StatefulWidget {
 
 class _CreateEventPageState extends State<CreateEventPage> {
   DatabaseService dbService = DatabaseService();
+  List<Map<String, dynamic>> actions = [];
   final TextEditingController eventNameController = TextEditingController();
   final TextEditingController eventDateController = TextEditingController();
   final TextEditingController eventLocationController = TextEditingController();
   String category = 'Birthday'; // Default category
   String status = 'Current'; // Default status
+
+  Future<void> saveActions(List<Map<String, dynamic>> actions) async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentActionsString = prefs.getString('user_${widget.userid.toString()}_events_actions');
+    print("currentActionsString in event list is  : $currentActionsString");
+    await prefs.setString('user_${widget.userid.toString()}_events_actions', jsonEncode(actions));
+    print("currentActions in event list is after saving  : ${prefs.getString('user_${widget.userid.toString()}_events_actions')}");
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -115,14 +130,17 @@ class _CreateEventPageState extends State<CreateEventPage> {
       widget.userid,
       newEvent
     );
+    newEvent.id=eventid;
+    actions.add({
+      'action': 'add',
+      'event': newEvent.toJson()
+    });
+    saveActions(actions);
     print("added event $newEvent");
-    // Navigate to the EventListPage
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => EventListPage(userid: widget.userid, db: dbService),
-      ),
-    );
+    // widget.motionTabBarController.index = 1;
+    Navigator.pop(context); // Go back to HomePage
+    // Navigator.pop(context);
+
   }
 
 

@@ -4,6 +4,9 @@ import 'gift_details_page.dart';
 import 'database.dart';
 import 'gift_item.dart';
 import 'Event.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+
 class GiftListPage extends StatefulWidget {
   final int eventid;
   final int userid;
@@ -14,9 +17,11 @@ class GiftListPage extends StatefulWidget {
 }
 
 class _GiftListPage extends State<GiftListPage> {
+  List<Map<String, dynamic>> actions = [];
   DatabaseService dbService = DatabaseService();
   String selectedFilter = 'giftName'; // Default filter is gift name
   List<Map<String, dynamic>> filteredGifts = [];
+  bool exists = false;
   List<Map<String, dynamic>> allGifts = [];
   List<Map<String, dynamic>> pledges = [];
   TextEditingController giftNameController = TextEditingController();
@@ -28,6 +33,11 @@ class _GiftListPage extends State<GiftListPage> {
   void initState() {
     super.initState();
     _loadAllGifts();
+    _loadActions(widget.userid).then((value) {
+      setState(() {
+        actions = value;
+      });
+    });
   }
 
 
@@ -69,13 +79,111 @@ class _GiftListPage extends State<GiftListPage> {
       }
     } catch (e) {
       print("Error loading gifts: $e");
-    } finally {
-      // Set the loading flag to false after processing all gifts
-      loading = false;
     }
 
     print("All filtered gifts loaded: $filteredGifts");
   }
+  Future<void> deleteActions(List<Map<String, dynamic>> actions) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_${widget.userid.toString()}_gifts_actions');
+  }
+
+  Future<List<Map<String, dynamic>>> _loadActions(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    // if (prefs.getString('user_${widget.userid.toString()}_gifts_actions') != null) {
+    //   await prefs.remove('user_${widget.userid.toString()}_gifts_actions');
+    // }
+    final jsonString = prefs.getString('user_${userId.toString()}_gifts_actions');
+
+    setState(() {
+      loading = false;
+    });
+    print("jsonString: $jsonString");
+
+    // Decode to a List<Map<String, dynamic>> instead of a Map
+    return jsonString != null
+        ? List<Map<String, dynamic>>.from(jsonDecode(jsonString))
+        : [];
+  }
+
+  Future<void> saveActions(List<Map<String, dynamic>> actions) async {
+    final prefs = await SharedPreferences.getInstance();
+    final currentActionsString = prefs.getString('user_${widget.userid.toString()}_gifts_actions');
+    print("currentActionsString in gift list is  : $currentActionsString");
+    await prefs.setString('user_${widget.userid.toString()}_gifts_actions', jsonEncode(actions));
+    print("currentActions in gift list is after saving  : ${prefs.getString('user_${widget.userid.toString()}_gifts_actions')}");
+  }
+
+  void _publishToFirebase() async {
+    for (var action in actions) {
+      print("Processing action: $action");
+
+      final eventId = action['gift']['eventID'];
+      final gift = action['gift'];
+      final giftId = gift['giftid'];
+
+      // Check if the event exists
+      bool exists = await _checkEventExistsAndHandleError(eventId);
+      if (!exists) return;
+
+      // Handle actions
+      switch (action['action']) {
+        case 'add':
+          await dbService.addGiftForUserinFirebase(gift, widget.userid, giftId);
+          break;
+
+        case 'update':
+          await dbService.updateGiftForUserinFirebase(gift, giftId, widget.userid);
+          break;
+
+        case 'delete':
+          print("Deleting gift: $gift");
+          await dbService.deleteGiftsForUserinFirebase(giftId, widget.userid, eventId);
+          break;
+
+        default:
+          print("Unknown action: ${action['action']}");
+          break;
+      }
+    }
+
+    // Clear actions and update shared preferences
+    actions.clear();
+    deleteActions(actions);
+
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Gifts published in Firebase successfully!")),
+    );
+  }
+
+  /// Helper function to check if the event exists in Firebase and show an error dialog if not.
+  Future<bool> _checkEventExistsAndHandleError(int eventId) async {
+    bool exists = await dbService.doesEventExistInFirebase(eventId, widget.userid);
+
+    if (!exists) {
+      await showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('Event does not exist'),
+          content: Text(
+            'Please publish the event first before publishing the gifts.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return exists;
+  }
+
 
 
   // get the event name from the database by the event id
@@ -210,6 +318,12 @@ class _GiftListPage extends State<GiftListPage> {
                       // remove the gift from the event's gifts in the database
                       Map<String, dynamic> giftToRemove = filteredGifts[index];
                       await dbService.deleteGiftsForUser(giftToRemove['giftid'], widget.userid, widget.eventid);
+                      giftToRemove['eventID'] = widget.eventid;
+                      actions.add({
+                        'action': 'delete',
+                        'gift': giftToRemove
+                      });
+                      saveActions(actions);
                       setState(() {
                         // Remove the gift from the filtered list
                         filteredGifts.removeAt(index);
@@ -342,6 +456,7 @@ class _GiftListPage extends State<GiftListPage> {
                     // "+" Icon Button
                     ElevatedButton(
                       onPressed: () async {
+
                         var updatedGift = await Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -364,6 +479,11 @@ class _GiftListPage extends State<GiftListPage> {
                           // Add the new or updated gift to the list
                           updatedGift['giftid'] = id;
                           print("updatedGift is $updatedGift");
+                          actions.add({
+                            'action': 'add',
+                            'gift': updatedGift
+                          });
+                          saveActions(actions);
                           setState(() {
                             filteredGifts.add(updatedGift);
                             allGifts.add(updatedGift);
@@ -384,16 +504,36 @@ class _GiftListPage extends State<GiftListPage> {
                   ],
                 ),
                 SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _publishToFirebase, // Call your publish function here
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.deepPurple, // Button background color
+                    foregroundColor: Colors.white, // Button text color
+                    padding: EdgeInsets.symmetric(vertical: 12.0, horizontal: 20.0), // Larger button height
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0), // Rounded corners
+                    ),
+                  ),
+                  child: Text(
+                    'Publish gifts',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 20),
                 Expanded(
                   child: ListView.builder(
                     itemCount: filteredGifts.length,
                     itemBuilder: (context, index) {
+                      print("filteredGifts: $filteredGifts");
                       var gift = filteredGifts[index];
                       print("gift is $gift");
 
                       return GiftItem(
                         giftid: gift['giftid'],
-                        friendName: gift['pledgedby'],
+                        friendName: gift['pledgedby']?? '',
                         giftName: gift['giftName'],
                         category: gift['category'],
                           status: (gift['pledged'] == 0 || gift['pledged'] == false) ? false : true,
@@ -411,8 +551,12 @@ class _GiftListPage extends State<GiftListPage> {
                           );
 
                           if (updatedGift != null) {
-                            print("Gift ID: ${gift['giftid']}");
                             await dbService.updateGiftForUser(updatedGift, gift['giftid'], widget.userid);
+                            actions.add({
+                              'action': 'update',
+                              'gift': updatedGift
+                            });
+                            saveActions(actions);
                             setState(() {
                               filteredGifts[index] = updatedGift;
                               allGifts[index] = updatedGift;

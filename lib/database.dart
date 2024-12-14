@@ -378,12 +378,16 @@ class DatabaseService {
             //     now get the gifts for that event from the database
             final List<Map<String, dynamic>> localGifts = await myData.rawQuery(
                 'SELECT * FROM Gifts WHERE eventID = ${event['eventId']}');
-            // print("event['gifts'] is ${event['gifts']}");
+            print("event['gifts'] is ${event['gifts']}");
             int pledged = 0;
-            final List<Map<String, dynamic>> gifts =
-            (event['gifts'] as List<dynamic>)
+            // remove nulls
+            final List<Map<String, dynamic>> gifts = (event['gifts'] as List)
+                .where((element) => element != null && element is Map) // Exclude null and non-Map elements
                 .map((e) => Map<String, dynamic>.from(e as Map))
                 .toList();
+
+
+            print("gifts are $gifts");
             for (var gift in gifts) {
               final Map<String, dynamic> result = localGifts.firstWhere((
                   element) => element['giftid'] == gift['giftid']);
@@ -571,7 +575,7 @@ class DatabaseService {
 
     int Eventid= await myData.rawInsert("INSERT INTO Events (eventName, category, eventDate, eventLocation, description, Status, userID) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [event.name, event.category, event.date.toString(), event.location, event.description, event.status, userId]);
-    await addEventForUserinFirebase(event, userId, Eventid);
+    // await addEventForUserinFirebase(event, userId, Eventid);
     return Eventid;
   }
 
@@ -603,7 +607,7 @@ class DatabaseService {
       }
 
       // Add the event to the user's events list
-      await dbRef.child("${EventId_for_firebase.toString()}").set({
+      await dbRef.child("${EventId_for_firebase}").set({
         'eventId': EventId,
         'eventName': event.name,
         'category': event.category,
@@ -617,6 +621,43 @@ class DatabaseService {
       throw e;
     }
   }
+  // check if event exists in firebase given an event id and user id
+  Future<bool> doesEventExistInFirebase(int eventId,int userId) async {
+    try {
+      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final DataSnapshot snapshot = await dbRef.get();
+
+      if (snapshot.exists) {
+        if (snapshot.value is Map) {
+          final eventsMap = Map<String, dynamic>.from(snapshot.value as Map);
+          for (var event in eventsMap.values) {
+            if (event['eventId'] == eventId) {
+              return true;
+            }
+          }
+          return false;
+        }
+          else if (snapshot.value is List) {
+          final rawEvents = snapshot.value as List;
+          for (var event in rawEvents) {
+            if (event is Map && event['eventId'] == eventId) {
+              return true;
+            }
+          }
+          return false;
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return false;
+        }
+      } else {
+        print("No events found for user $userId.");
+        return false;
+      }
+    } catch (e) {
+      print("Error checking event existence: $e");
+      throw e;
+    }
+  }
 
   // Add gift for user
   Future<int> addGiftForUser(Map<String,dynamic> gift , int userId) async {
@@ -624,18 +665,10 @@ class DatabaseService {
     int id= await myData.rawInsert("INSERT INTO Gifts (giftName, category, price, imageurl, description, pledged, eventID) VALUES (?, ?, ?, ?, ?, ?, ?)",
         [gift['giftName'], gift['category'], gift['price'], gift['imageurl'], gift['description'], gift['pledged'], gift['eventID']]);
 
-    await addGiftForUserinFirebase(gift, userId,id);
+    // await addGiftForUserinFirebase(gift, userId,id);
     return id;
   }
   Future<void> addGiftForUserinFirebase(Map<String, dynamic> gift, int userId, int giftId) async {
-
-    Database myData = await db;
-
-
-
-
-    print("query executed");
-
     try {
       final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
@@ -662,7 +695,7 @@ class DatabaseService {
 
           if (eventKey != null) {
             // Add the gift to the 'gifts' list under the specified event
-            await dbRef.child("$eventKey/gifts/${giftId_for_firebase.toString()}").set({
+            await dbRef.child("$eventKey/gifts/${giftId_for_firebase}").set({
               'giftid': giftId,
               'giftName': gift['giftName'],
               'category': gift['category'],
@@ -696,7 +729,7 @@ class DatabaseService {
 
           if (eventIndex != null) {
             // Add the gift to the 'gifts' list under the specified event
-            await dbRef.child("$eventIndex/gifts/${giftId_for_firebase.toString()}").set({
+            await dbRef.child("$eventIndex/gifts/${giftId_for_firebase}").set({
               'giftid': giftId,
               'giftName': gift['giftName'],
               'category': gift['category'],
@@ -773,7 +806,7 @@ class DatabaseService {
           event.id,
         ]
     );
-    await updateEventForUserinFirebase(event, userId);
+    // await updateEventForUserinFirebase(event, userId);
 
   }
 
@@ -882,7 +915,7 @@ class DatabaseService {
           giftid,
         ]
     );
-    await updateGiftForUserinFirebase(gift, giftid,userId);
+    // await updateGiftForUserinFirebase(gift, giftid,userId);
   //   print the gift with id 1
     var result = await myData.rawQuery('SELECT * FROM Gifts WHERE giftid = $giftid');
   }
@@ -1297,6 +1330,82 @@ class DatabaseService {
       throw e;
     }
   }
+Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) async {
+    Database myData = await db;
+    int friendId;
+    int giftid;
+    for (var event in eventsToDelete) {
+      var gifts = await myData.rawQuery("SELECT * FROM Gifts WHERE eventID = ${event.id}");
+      for (var gift in gifts) {
+        giftid = int.parse(gift['giftid'].toString());
+        if (gift['pledged'] == 1 || gift['pledged'] == true) {
+        //   get the friend id of the user who pledged the gift from firebase
+          friendId= await getWhoHasPledgedGiftfromFirebase(userId,giftid) as int;
+          print("friendId who has the pledged gift is $friendId");
+          await updateGiftStatus(giftid, false,friendId, userId);
+          print("gift with id $giftid is now unpledged");
+
+        }
+      }
+    }
+  }
+  Future <int> getWhoHasPledgedGiftfromFirebase(int userId, int giftId) async {
+    try{
+
+     final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
+     final DataSnapshot snapshot = await dbRef.get();
+     print("snapshot value in getWhoHasPledgedGiftfromFirebase is ${snapshot.value}");
+     final usersList = snapshot.value as List;
+     print("usersMap is $usersList");
+     for (var user in usersList) {
+       if (user['userid'] == userId) {
+         continue;
+       }
+       if (user['pledgedgifts'] is List) {
+         print("user of pledged gifts is a list and it is ${user['pledgedgifts']}");
+         // [null, [2,3], [9]]
+         for (var pledges in user['pledgedgifts']) {
+           print("pledges is $pledges");
+           if (pledges == null) {
+             continue;
+           }
+           for (var gift in pledges) {
+             if (gift == giftId) {
+               print("gift is $gift, while gift id is $giftId");
+               print("user id is ${user['userid']}");
+               return user['userid'];
+           }
+         }
+       }
+
+
+      }
+       else if (user['pledgedgifts'] is Map) {
+         print("user of pledged gifts is a map and it is ${user['pledgedgifts']}");
+         // {1: [2,3], 2: [9]}
+         final List<int> pledgedGifts_firebase = [];
+         user['pledgedgifts'].forEach((key, value) {
+           for (var gift in value) {
+             pledgedGifts_firebase.add(gift);
+           }
+         });
+         print("pledgedGifts_firebase is $pledgedGifts_firebase");
+         for (var gift in pledgedGifts_firebase) {
+            if (gift == giftId) {
+              return user['userid'];
+         }
+       }
+
+     }
+  }
+     return 0;
+
+  }
+    catch (e) {
+      print("Error fetching pledged gifts for user $userId: $e");
+      throw e;
+    }
+  }
 
 
   // Delete events for user
@@ -1305,17 +1414,17 @@ class DatabaseService {
     for (var event in eventsToDelete) {
       await myData.rawDelete("DELETE FROM Events WHERE eventId = ${event.id}");
     }
-    await deleteEventsForUserinFirebase(userId, eventsToDelete);
+    // await deleteEventsForUserinFirebase(userId, eventsToDelete);
 
   }
   Future<void> deleteEventsForUserinFirebase(int userId, List<Event> eventsToDelete) async {
     try {
+      await deletePldegedGiftsForUser(userId, eventsToDelete);
       final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
 
       if (snapshot.exists) {
         if (snapshot.value is Map) {
-          print("snapshot value is map");
           // Convert the snapshot value to Map<String, dynamic>
           final eventsMap = Map<String, dynamic>.from(snapshot.value as Map);
           print("eventsMap is $eventsMap");
@@ -1413,7 +1522,7 @@ class DatabaseService {
   Future<void> deleteGiftsForUser(int giftId,int userId,int eventid) async {
     Database myData = await db;
     await myData.rawQuery("DELETE FROM Gifts WHERE giftid = $giftId");
-    await deleteGiftsForUserinFirebase(giftId, userId, eventid);
+    // await deleteGiftsForUserinFirebase(giftId, userId, eventid);
   }
   Future<void> deleteGiftsForUserinFirebase(int giftId, int userId, int eventId) async {
     try {
@@ -1480,6 +1589,9 @@ class DatabaseService {
                   print("gifts is list");
                   final giftsList = event['gifts'] as List;
                   for (var j = 0; j < giftsList.length; j++) {
+                    if (giftsList[j]== null){
+                      continue;
+                    }
                     if (giftsList[j]['giftid'] == giftId) {
                       eventIndexToDelete = i.toString();
                       giftIndexToDelete = j.toString();
@@ -1550,37 +1662,62 @@ class DatabaseService {
         } else if (snapshot.value is List) {
           print("snapshot value is list");
           final rawEvents = snapshot.value as List;
+          print("rawEvents are $rawEvents");
 
           // Iterate through each event and log it
           for (var i = 0; i < rawEvents.length; i++) {
-          //   cast each gift list to a map
-            if (rawEvents[i]['gifts'] is List) {
-              rawEvents[i]['gifts'] = (rawEvents[i]['gifts'] as List).map((gift) {
-                return Map<String, dynamic>.from(gift as Map);
-              }).toList();
+            print("rawEvents[i] is ${rawEvents[i]}");
+            if (rawEvents[i] == null) {
+              continue;
             }
+            if (rawEvents[i]['gifts'] == null) {
+              rawEvents[i]['gifts'] = [];
+            }
+              // ignore nulls
+              else if (rawEvents[i]['gifts'] is List) {
+                rawEvents[i]['gifts'] = (rawEvents[i]['gifts'] as List)
+                    .where((gift) => gift != null) // Exclude null elements
+                    .map((gift) {
+                  // Safely convert each non-null gift to a map
+                  return Map<String, dynamic>.from(gift as Map);
+                }).toList();
+              }
+
             else if (rawEvents[i]['gifts'] is Map) {
+              print("gifts is map");
               rawEvents[i]['gifts'] = Map<String, dynamic>.from(rawEvents[i]['gifts'] as Map);
             }
           }
 
-          // Convert events while excluding null entries
           final events = rawEvents
-              .where((event) => event != null)
+              .where((event) => event != null) // Exclude null events
               .map((event) {
             try {
-              // print("Processing event: $event");
-              return friendEvent.fromMap(Map<String, dynamic>.from(event as Map));
+              // Ensure event is a Map<String, dynamic>
+              final eventMap = Map<String, dynamic>.from(event as Map);
+
+              // Normalize 'gifts' to always be a list of maps
+              if (eventMap['gifts'] is List) {
+                eventMap['gifts'] = (eventMap['gifts'] as List)
+                    .where((gift) => gift is Map) // Exclude non-map entries
+                    .map((gift) => Map<String, dynamic>.from(gift as Map))
+                    .toList();
+              } else if (eventMap['gifts'] == null) {
+                eventMap['gifts'] = []; // Ensure 'gifts' is not null
+              }
+
+              // Pass the normalized event to the fromMap method
+              return friendEvent.fromMap(eventMap);
             } catch (e) {
               print("Error processing event: $event, error: $e");
               return null; // Skip problematic events
             }
-          })
-              .whereType<friendEvent>() // Remove nulls from the final list
+          }).whereType<friendEvent>() // Remove nulls from the final list
               .toList();
 
           print("Processed events: $events");
           return events;
+
         }
         else {
           print("Unexpected data format: ${snapshot.value}");
@@ -1654,6 +1791,7 @@ class DatabaseService {
     Future<Map<String, dynamic>> getEventByGiftId(int giftId) async {
     Database myData = await db;
     var result = await myData.rawQuery('SELECT * FROM Events WHERE eventId IN (SELECT eventID FROM Gifts WHERE giftid = $giftId)');
+
     return result.first ;
     }
 
