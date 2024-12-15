@@ -7,6 +7,10 @@ import 'createEvent.dart';
 import 'database.dart';
 import 'dart:async';
 import 'package:motion_tab_bar/MotionTabBarController.dart';
+import 'NotificationService.dart';
+import 'Notification.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 class Friend {
   final String name;
@@ -35,7 +39,12 @@ class _HomePageState extends State<HomePage> {
   bool isLoading = true;
   Map<int, int> eventCounts = {};
   late List<Map<String, dynamic>> filteredFriendsList = [];
-  Timer? _debounce;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  late AppNotificationService _notificationService;
+  List<AppNotification> _notifications = [];
+  StreamSubscription<DatabaseEvent>? _notificationsSubscription;
+
 
 
 
@@ -43,8 +52,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     print("in init state of home page now!");
     super.initState();
+    _requestNotificationPermissions();
+    _notificationService = AppNotificationService(userid: widget.userid);
     _loadFriendsList();
     _printDatabase();
+    _loadNotifications();
 
     _searchController.addListener(() {
 
@@ -52,8 +64,73 @@ class _HomePageState extends State<HomePage> {
 
     });
   }
-  Future <void> _printDatabase() async {
+  void _requestNotificationPermissions() async {
+    FirebaseMessaging messaging = FirebaseMessaging.instance;
 
+    NotificationSettings settings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      print('User granted notification permissions.');
+    } else {
+      print('User declined or did not accept notification permissions.');
+    }
+  }
+  // Load notifications from the database
+  void _loadNotifications() {
+    final DatabaseReference notificationsRef = FirebaseDatabase.instance
+        .ref("Users/${widget.userid}/notifications");
+
+    // Listen for changes in the notifications node
+    notificationsRef.onValue.listen((event) {
+      final data = event.snapshot.value;
+      if (data != null) {
+        List<AppNotification> updatedNotifications = [];
+        if (data is Map) {
+          data.forEach((key, value) {
+            if (value != null && value is Map) {
+              updatedNotifications.add(AppNotification(
+                message: value['message'] ?? '',
+                timestamp: DateTime.parse(value['timestamp'] ?? DateTime.now().toString()),
+                isRead: value['isRead'] ?? false,
+              ));
+            }
+          });
+        }
+        if (mounted) {
+          setState(() {
+            _notifications = updatedNotifications;
+          });
+        }
+      }
+    });
+  }
+  @override
+  void dispose() {
+    // Cancel the subscription to avoid calling setState after widget disposal
+    _notificationsSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _showNotificationHistory() {
+    // Mark all notifications as read once they are displayed
+    _notifications.forEach((notification) {
+      if (!notification.isRead) {
+        notification.isRead = true;
+        _notificationService.markNotificationAsRead(notification);  // Update status in DB
+      }
+    });
+    _scaffoldKey.currentState?.openDrawer();  // Open the drawer using the GlobalKey
+  }
+
+
+
+
+
+  Future <void> _printDatabase() async {
     await widget.dbService.printDatabase();
   }
 
@@ -260,6 +337,93 @@ class _HomePageState extends State<HomePage> {
       return Center(child: CircularProgressIndicator());
     }
     return Scaffold(
+      key: _scaffoldKey,
+      appBar: AppBar(
+        title: Text('Home Page'),
+        leading: IconButton(
+          icon: Stack(
+            children: [
+              Icon(Icons.notifications),
+              if (_notifications.any((n) => !n.isRead))
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: CircleAvatar(
+                    radius: 8,
+                    backgroundColor: Colors.red,
+                    child: Text(
+                      _notifications.where((n) => !n.isRead).length.toString(),
+                      style: TextStyle(fontSize: 12, color: Colors.white),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          onPressed: () {
+            _showNotificationHistory();
+          },
+        ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            Container(
+              height: 80, // Set the desired height here
+              decoration: BoxDecoration(
+                color: Colors.deepPurple,
+              ),
+              child: Center(
+                child: Text(
+                  'Notifications',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                  ),
+                ),
+              ),
+            ),
+            _notifications.isEmpty
+                ? ListTile(
+              title: Text('No notifications yet.'),
+            )
+                : Column(
+              children: _notifications.map((notification) {
+                return Card(
+                  margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  child: ListTile(
+                    title: Text(
+                      notification.message,
+                      style: TextStyle(
+                        fontWeight: notification.isRead
+                            ? FontWeight.normal
+                            : FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Text(notification.timestamp.toString()),
+                  ),
+                );
+              }).toList(),
+            ),
+            ListTile(
+              title: Text('Clear All'),
+              onTap: () async {
+                await _notificationService.clearNotifications();
+                setState(() {
+                  _notifications.clear();
+                });
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: Text('Close'),
+              onTap: () {
+                Navigator.pop(context); // Close the drawer
+              },
+            ),
+          ],
+        ),
+      ),
       body: Stack(
         children: [
           Container(

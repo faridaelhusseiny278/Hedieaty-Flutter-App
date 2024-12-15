@@ -6,17 +6,20 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/material.dart';
 
 
 class DatabaseService {
-  static DatabaseService? _dbService;
+  static final DatabaseService _instance = DatabaseService._internal();
+
+  factory DatabaseService() => _instance;
+
+  DatabaseService._internal();
+
   Database? _database;
 
-  // Singleton pattern to ensure only one instance of DatabaseService
   Future<Database> get db async {
-    if (_database == null) {
-      _database = await init();
-    }
+    _database ??= await init();
     return _database!;
   }
   Future<int> insertData(String SQL) async {
@@ -28,13 +31,16 @@ class DatabaseService {
   Future<Database> init() async {
     print ("i'm in init database noww!!!");
     String path = join(await getDatabasesPath(), 'hedeaty.db');
+
+      // await deleteDatabase(path);
+      // print("database deleted");
+
     if (await databaseExists(path)) {
       print("database already exists");
       return await openDatabase(path);
     }
 
-    // await deleteDatabase(path);
-    // print("database deleted");
+
     return await openDatabase(
       path,
       version: 1,
@@ -89,118 +95,112 @@ class DatabaseService {
           FOREIGN KEY(userID) REFERENCES Users(userid)
         )''');
 
-        // Insert users
-        String insertUsersSQL = ''' 
-    INSERT INTO Users (userid, name, phonenumber, email, address, notification_preferences, imageurl) 
-    VALUES
-      (0, 'Alice in wondeland', '+1234567890', 'alice@example.com', '123 Wonderland St, Fantasy City', 'Push Notifications, Email Notifications, SMS Notifications',"assets/istockphoto-1296058958-612x612.jpg"),
-      (1, 'Bob', '+1987654321', 'bob@example.com', '456 Oak Ave, Citytown', 'Email Notifications, SMS Notifications', "assets/istockphoto-1371904269-612x612.jpg"),
-      (2, 'Charlie', '+1122334455', 'charlie@example.com', '789 Pine Rd, Suburbia', 'SMS Notifications, Push Notifications',"assets/istockphoto-1417086080-612x612.jpg"),
-      (3, 'David', '+1998765432', 'david@example.com', '12 Elm St, Downtown', 'Email Notifications, SMS Notifications',"assets/young-smiling-man-adam-avatar-600nw-2107967969.png"),
-      (4, 'Eve', '+1222333444', 'eve@example.com', '56 Maple Rd, Greenfield', 'SMS Notifications, Push Notifications',"assets/young-smiling-woman-mia-avatar-600nw-2127358541.png"),
-      (5, 'Frank', '+1333444555', 'frank@example.com', '88 Birch St, Lakeside', 'Email Notifications, Push Notifications', "assets/istockphoto-1296058958-612x612.jpg"),
-      (7, 'Farida', '+128456', 'Farida@example.com', '11 Maple St, Townville', 'SMS Notifications, Push Notifications', "assets/istockphoto-1296058958-612x612.jpg")
-     
-  ''';
-
-        await db.execute(insertUsersSQL);
-
-
-        // Insert events for Alice, Bob, Charlie, David, Eve, and Frank
-        String insertEventsSQL = '''
-    INSERT INTO Events (eventId, eventName, eventDate, eventLocation, category, Status, userid, description)
-    VALUES
-      (1, 'Birthday Bash', '2024-12-10', 'Alice''s House', 'Birthday', 'Upcoming', 0, 'Alice''s 30th Birthday Celebration'),
-      (2, 'Wedding Anniversary', '2024-10-05', 'Luxury Hotel', 'Social', 'past', 0, 'Celebrating Alice and her partner''s wedding anniversary'),
-      (9, 'Housewarming Party', '2024-11-15', 'Alice''s New Home', 'Housewarming', 'Upcoming', 0, 'Alice''s Housewarming Party at her new place'),
-      (10, 'Christmas Celebration', '2024-12-25', 'Alice''s House', 'Holiday', 'Upcoming', 0, 'Traditional family Christmas celebration'),
-      (11, 'New Year Eve Party', '2024-12-31', 'City Center', 'Celebration', 'Upcoming', 0, 'City-wide New Year celebration'),
-      (3, 'Graduation Party', '2024-11-29', 'Bob''s College', 'Celebration', 'Current', 1, 'Bob''s graduation ceremony and party'),
-      (14, 'Housewarming Party', '2024-07-15', 'Bob''s New Apartment', 'Housewarming', 'Upcoming', 1, 'Housewarming party at Bob''s new apartment'),
-      (15, 'Birthday Celebration', '2024-08-10', 'Bob''s Backyard', 'Birthday', 'Upcoming', 1, 'Bob''s birthday celebration at his backyard'),
-      (16, 'New Year''s Eve Party', '2024-12-31', 'Bob''s House', 'Celebration', 'Upcoming', 1, 'Celebrating New Year''s Eve at Bob''s house'),
-      (17, 'Christmas Dinner', '2024-12-25', 'Bob''s House', 'Holiday', 'Upcoming', 1, 'Bob''s Christmas dinner with family and friends'),
-      (4, 'Housewarming', '2024-12-01', 'Charlie''s New House', 'Social', 'Current', 2, 'Charlie''s housewarming event with friends'),
-      (5, 'Christmas Party', '2024-12-25', 'David''s Apartment', 'Holiday', 'Upcoming', 3, 'Holiday party at David''s apartment'),
-      (6, 'Baby Shower', '2025-01-15', 'Eve''s House', 'Celebration', 'Upcoming', 4, 'Eve''s baby shower party with close friends and family'),
-      (7, 'New Year Party', '2024-01-01', 'Frank''s Mansion', 'Celebration', 'Upcoming', 5, 'New Year party at Frank''s mansion'),
-      (8, 'Birthday', '2025-2-1', 'Farida''s House', 'Birthday', 'Upcoming', 7, 'My 21 Birthday')
-  ''';
-
-
-        await db.execute(insertEventsSQL);
-
-        // Insert gifts for Alice, Bob, Charlie, David, Eve, and Frank
-        String insertGiftsSQL = '''
-    INSERT INTO Gifts (giftid, giftName, category, pledged, imageurl, price, description, eventID)
-    VALUES
-      (1, 'Smartwatch', 'Tech', TRUE, 'https://example.com/smartwatch.jpg', 200.0, 'A sleek smartwatch with fitness tracking features.', 1),
-      (2, 'Fitness Tracker', 'Health', TRUE, 'https://example.com/fitnesstracker.jpg', 50.0, 'A high-quality fitness tracker that helps monitor my workouts, heart rate, and daily activity.', 1),
-      (3, 'Romantic Dinner Voucher', 'Experience', FALSE, 'https://example.com/dinner.jpg', 100.0, 'A voucher for a romantic dinner at a 5-star restaurant.', 2),
-      (13, 'Wine Glass Set', 'Home', FALSE, 'https://example.com/wineglassset.jpg', 40.0, 'None', 9),
-      (14, 'Christmas Tree Decoration Set', 'Home', FALSE, 'https://example.com/christmasdecorations.jpg', 30.0, 'A complete set of decorations for the perfect Christmas tree.', 10),
-      (15, 'Party Supplies', 'Event', FALSE, 'https://example.com/partysupplies.jpg', 50.0, 'A complete set of party supplies including balloons, decorations, and tableware, perfect for hosting a fun and memorable event.', 11),
-      (4, 'Laptop', 'Tech', FALSE, 'https://example.com/laptop.jpg', 1000.0, 'A powerful laptop for all my work and play needs.', 3),
-      (5, 'Camera', 'Tech', FALSE, 'https://example.com/camera.jpg', 500.0, 'A high-quality digital camera that captures stunning photos and videos.', 3),
-      (16, 'Smart Home Speaker', 'Tech', FALSE, 'https://example.com/smartspeaker.jpg', 150.0, 'A cutting-edge smart speaker that integrates seamlessly with my home.', 14),
-      (17, 'Home Decor Set', 'Home', FALSE, 'https://example.com/homedecor.jpg', 75.0, 'A stylish and elegant home decor set that includes decorative items such as candles, vases, and throw pillows.', 14),
-      (18, 'Teddy Bear', 'Toys', FALSE, 'https://example.com/giftcard.jpg', 50.0, 'A soft and cuddly teddy bear made from plush fabric.', 15),
-      (19, 'Party Decorations', 'Event', FALSE, 'https://example.com/partydecorations.jpg', 40.0, 'A complete set of vibrant party decorations, including balloons, banners, and streamers.', 16),
-      (20, 'Christmas Tree', 'Home', FALSE, 'https://example.com/christmastree.jpg', 100.0, 'A complete set of decorations for the perfect Christmas tree.', 17),
-      (6, 'Wine Glass Set', 'Home', TRUE, 'https://example.com/wineglasses.jpg', 40.0, 'None', 4),
-      (7, 'Bluetooth Speaker', 'Tech', TRUE, 'https://example.com/speaker.jpg', 120.0, 'A smart speaker that connects with your home devices.', 5),
-      (8, 'Winter Jacket', 'Fashion', TRUE, 'https://example.com/jacket.jpg', 150.0, 'A stylish and warm winter jacket, perfect for keeping cozy during the cold season.', 5),
-      (9, 'Baby Stroller', 'Toys', FALSE, 'https://example.com/stroller.jpg', 300.0, 'A comfortable and secure baby stroller designed for easy mobility.', 6),
-      (10, 'Baby Monitor', 'Toys', TRUE, 'https://example.com/monitor.jpg', 80.0, 'A high-quality baby monitor with video and audio capabilities.', 6),
-      (11, 'Portable Charger', 'Tech', TRUE, 'https://example.com/charger.jpg', 25.0, 'A compact and powerful portable charger designed to keep my devices powered on the go.', 7),
-      (12, 'Smart Thermostat', 'Home', TRUE, 'https://example.com/thermostat.jpg', 200.0, 'None', 7)
-  ''';
-
-        await db.execute(insertGiftsSQL);
-
-
-
-        // Insert friendships between users
-        String insertFriendsSQL = '''
-    INSERT INTO Friends (userID, friendID)
-    VALUES
-      (0, 1), (0, 2), (0, 5), (0, 4), 
-      (0,3), (0,7), 
-      (1, 2), (1, 5), (1, 3), 
-      (1,7),(1,4),
-      (2, 3), (2, 5), (2,7),
-      (3, 4), (3, 7), 
-      (4, 5)
-  ''';
-        await db.execute(insertFriendsSQL);
-
-
-
-        String insertPledgesSQL = '''
-        INSERT INTO Pledges (giftID, userID)
-        VALUES
-        -- Alice's pledges
-          (1, 1), -- Bob pledges to gift Alice a Smartwatch
-          (2,1),
-        (6, 0), -- Alice pledges to gift Bob a Laptop
-        (8,0 ), -- Alice pledges to gift Bob a Winter Jacket
-        (7, 2), -- Charlie pledges to gift Bob a Camera
-        (11,4), -- Eve pledges to gift Bob a Smart Home Speaker
-        (12,4), -- Eve pledges to gift Bob a Home Decor Set
-        (9,5), -- Frank pledges to gift Bob a Baby Stroller
-        -- Charlie's pledges
-        (6, 3),
-        (10,7) 
-       
-        
- ''' ;
-        await db.execute(insertPledgesSQL);
+        await FetchDataFromFirebase(db);
         print("Sample data inserted successfully!");
 
 
         },
     );
   }
+
+  Future <void> FetchDataFromFirebase(Database myData) async
+  {
+    final DatabaseReference dbRef = FirebaseDatabase.instance.ref(
+        "Users");
+    final DataSnapshot snapshot = await dbRef.get();
+    if (snapshot.value is List) {
+      print("snapshot.value is list in fetch data");
+
+      final List usersList = snapshot.value as List;
+      for (var user in usersList) {
+        if (user == null) {
+          continue;
+        }
+
+
+        int user_id = await myData.rawInsert('''
+        INSERT INTO Users (userid, name, phonenumber, email, address, notification_preferences, imageurl)
+        VALUES (${user['userid']}, '${user['name']}', '${user['phonenumber']}', '${user['email']}', '${user['address']}', '${user['notification_preferences'].join(',')}', '${user['imageurl']}')
+        ''');
+        //   then insert in table events the events of the user
+        print("user['events'] is ${user['events']}");
+        if (user['events'] == null) {
+          continue;
+        }
+        for (var event in user['events']) {
+          if (event == null) {
+            continue;
+          }
+          int event_id = await myData.rawInsert('''
+          INSERT INTO Events (eventId, eventName, eventDate, eventLocation, category, Status, userID, description)
+          VALUES (${event['eventId']}, '${event['eventName'].replaceAll("'", "''")}', '${event['eventDate']}', '${event['eventLocation'].replaceAll("'", "''")}', '${event['category']}', '${event['Status']}', ${user['userid']}, '${event['description'].replaceAll("'", "''")}')
+          ''');
+          if (event['gifts'] == null) {
+            continue;
+          }
+          //   then insert in table gifts the gifts of the event
+          for (var gift in event['gifts']) {
+            if (gift == null) {
+              continue;
+            }
+            int gift_id = await myData.rawInsert('''
+            INSERT INTO Gifts (giftid, giftName, description, category, price, imageurl, pledged, eventID)
+            VALUES (${gift['giftid']}, '${gift['giftName'].replaceAll("'", "''")}', '${gift['description'].replaceAll("'", "''")}', '${gift['category']}', ${gift['price']}, '${gift['imageurl']}', ${gift['pledged']}, ${event['eventId']})
+            ''');
+          }
+        }
+        //   then insert to table friends the friends of the user
+        print("user['friends'] is ${user['friends']}");
+        for (var friend in user['friends']) {
+          if (friend == null) {
+            continue;
+          }
+          int friend_id = await myData.rawInsert('''
+          INSERT INTO Friends (userID, friendID)
+          VALUES (${user['userid']}, $friend)
+          ''');
+        }
+        //   then insert to table pledges the pledges of the user
+        print("user['pledgedgifts'] is ${user['pledgedgifts']}");
+        if (user['pledgedgifts'] is Map) {
+          for (var gifts in user['pledgedgifts'].values) {
+            if (gifts == null) {
+              continue;
+            }
+            for (var gift in gifts) {
+              if (gift == null) {
+                continue;
+              }
+              int pledge_id = await myData.rawInsert('''
+            INSERT INTO Pledges (giftID, userID)
+            VALUES ($gift, ${user['userid']})
+            ''');
+            }
+          }
+        }
+        else if (user['pledgedgifts'] is List) {
+          for (var gifts in user['pledgedgifts']) {
+            if (gifts == null) {
+              continue;
+            }
+            for (var gift in gifts) {
+              if (gift == null) {
+                continue;
+              }
+              int pledge_id = await myData.rawInsert('''
+            INSERT INTO Pledges (giftID, userID)
+            VALUES ($gift, ${user['userid']})
+            ''');
+            }
+          }
+        }
+
+      }
+    }
+  }
+
+
+
   // query table pledges to get the user id who pledged each gift which is an int
   Future <int> getPledges(int giftid) async {
     // delete from table table pledges where user id = 3 and gift id = 6
@@ -281,6 +281,9 @@ class DatabaseService {
     print("Default return -1");
     return -1; // Default return if no condition matches
   }
+
+
+
 
 
   Future <void> syncDatabasewithFirebase(int userid) async {
