@@ -49,9 +49,12 @@ dependencies:
   http: ^1.2.2
   googleapis: ^13.2.0
   googleapis_auth: ^1.6.0
+  mockito: ^5.0.0
 
 
 dev_dependencies:
+  integration_test:
+    sdk: flutter
   flutter_test:
     sdk: flutter
 

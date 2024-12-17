@@ -26,82 +26,95 @@ class DatabaseService {
     Database myData = await db;
     return await myData.rawInsert(SQL);
   }
+  Future<bool> _checkTableExists(Database db, String tableName) async {
+    // Query the database to check if the table exists
+    var result = await db.rawQuery('SELECT name FROM sqlite_master WHERE type="table" AND name=?', [tableName]);
+    return result.isNotEmpty;
+  }
 
 
   Future<Database> init() async {
     print ("i'm in init database noww!!!");
     String path = join(await getDatabasesPath(), 'hedeaty.db');
 
-      // await deleteDatabase(path);
-      // print("database deleted");
+      await deleteDatabase(path);
+      print("database deleted");
 
-    if (await databaseExists(path)) {
-      print("database already exists");
-      return await openDatabase(path);
+    // check if the database path exists annd all tables do exist
+    var db = await openDatabase(path);
+    // Check if the tables exist
+    bool usersExist = await _checkTableExists(db, 'Users');
+    bool eventsExist = await _checkTableExists(db, 'Events');
+    bool giftsExist = await _checkTableExists(db, 'Gifts');
+    bool friendsExist = await _checkTableExists(db, 'Friends');
+    bool pledgesExist = await _checkTableExists(db, 'Pledges');
+    if (usersExist && eventsExist && giftsExist && friendsExist && pledgesExist) {
+      print("Database tables already exist");
+      return db;
     }
+    print("Database tables do not exist, creating tables now...");
 
 
-    return await openDatabase(
-      path,
-      version: 1,
-      onCreate: (db, version) async {
-        // Create tables
-        await db.execute('''CREATE TABLE Users (
-          userid INTEGER PRIMARY KEY AUTOINCREMENT,
-          name TEXT,
-          phonenumber TEXT,
-          email TEXT,
-          address TEXT,
-          notification_preferences TEXT,
-          imageurl TEXT
-        )''');
+    await db.execute('''CREATE TABLE Users (
+      userid INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT,
+      phonenumber TEXT,
+      email TEXT,
+      address TEXT,
+      notification_preferences TEXT,
+      imageurl TEXT
+    )''');
+    print("Users table created successfully!");
 
-        await db.execute('''CREATE TABLE Events (
-          eventId INTEGER PRIMARY KEY AUTOINCREMENT,
-          eventName TEXT,
-          eventDate Date,
-          eventLocation TEXT,
-          description TEXT,
-          Status TEXT,
-          category TEXT,
-          userID INTEGER,
-          FOREIGN KEY(userID) REFERENCES Users(userid)
-        )''');
+    await db.execute('''CREATE TABLE Events (
+      eventId INTEGER PRIMARY KEY AUTOINCREMENT,
+      eventName TEXT,
+      eventDate Date,
+      eventLocation TEXT,
+      description TEXT,
+      Status TEXT,
+      category TEXT,
+      userID INTEGER,
+      FOREIGN KEY(userID) REFERENCES Users(userid)
+    )''');
+    print("Events table created successfully!");
 
-        await db.execute('''CREATE TABLE Gifts (
-          giftid INTEGER PRIMARY KEY AUTOINCREMENT,
-          giftName TEXT,
-          description TEXT,
-          category TEXT,
-          price REAL,
-          imageurl TEXT,
-          pledged BOOLEAN,
-          eventID INTEGER,
-          FOREIGN KEY(eventID) REFERENCES Events(eventId)
-        )''');
+    await db.execute('''CREATE TABLE Gifts (
+      giftid INTEGER PRIMARY KEY AUTOINCREMENT,
+      giftName TEXT,
+      description TEXT,
+      category TEXT,
+      price REAL,
+      imageurl TEXT,
+      pledged BOOLEAN,
+      eventID INTEGER,
+      FOREIGN KEY(eventID) REFERENCES Events(eventId)
+    )''');
+    print("Gifts table created successfully!");
 
-        await db.execute('''CREATE TABLE Friends (
-          userID INTEGER,
-          friendID INTEGER,
-          PRIMARY KEY (userID, friendID),
-          FOREIGN KEY(userID) REFERENCES Users(userid),
-          FOREIGN KEY(friendID) REFERENCES Users(userid)
-        )''');
+    await db.execute('''CREATE TABLE Friends (
+      userID INTEGER,
+      friendID INTEGER,
+      PRIMARY KEY (userID, friendID),
+      FOREIGN KEY(userID) REFERENCES Users(userid),
+      FOREIGN KEY(friendID) REFERENCES Users(userid)
+    )''');
+    print("Friends table created successfully!");
 
-        await db.execute('''CREATE TABLE Pledges (
-          giftID INTEGER,
-          userID INTEGER,
-          FOREIGN KEY(giftID) REFERENCES Gifts(giftid),
-          FOREIGN KEY(userID) REFERENCES Users(userid)
-        )''');
+    await db.execute('''CREATE TABLE Pledges (
+      giftID INTEGER,
+      userID INTEGER,
+      FOREIGN KEY(giftID) REFERENCES Gifts(giftid),
+      FOREIGN KEY(userID) REFERENCES Users(userid)
+    )''');
+    print("Pledges table created successfully!");
 
-        await FetchDataFromFirebase(db);
-        print("Sample data inserted successfully!");
-
-
-        },
-    );
+    // Optionally populate sample data
+    await FetchDataFromFirebase(db);
+    print("Sample data inserted successfully!");
+    return db;
   }
+
 
   Future <void> FetchDataFromFirebase(Database myData) async
   {
@@ -145,7 +158,7 @@ class DatabaseService {
             }
             int gift_id = await myData.rawInsert('''
             INSERT INTO Gifts (giftid, giftName, description, category, price, imageurl, pledged, eventID)
-            VALUES (${gift['giftid']}, '${gift['giftName'].replaceAll("'", "''")}', '${gift['description'].replaceAll("'", "''")}', '${gift['category']}', ${gift['price']}, '${gift['imageurl']}', ${gift['pledged']}, ${event['eventId']})
+            VALUES (${gift['giftid']}, '${gift['giftName'].replaceAll("'", "''")}', '${gift['description'].replaceAll("'", "''")}', '${gift['category']}', ${gift['price']}, '${gift['imageurl']}', ${gift['pledged'] ? 1 : 0}, ${event['eventId']})
             ''');
           }
         }
@@ -205,15 +218,11 @@ class DatabaseService {
   Future <int> getPledges(int giftid) async {
     // delete from table table pledges where user id = 3 and gift id = 6
     Database myData = await db;
-    int pledgedUser = await getPledgesFromFirebase(giftid);
-    print("pledgedUser from firebase is $pledgedUser");
-    List<Map<String, dynamic>> result = await myData.rawQuery('SELECT userID FROM Pledges WHERE giftID = $giftid');
-    if (result.isNotEmpty) {
-      return result.first['userID'] as int;
-    }
-    else {
-      return -1;
-    }
+    int result = await getPledgesFromFirebase(giftid);
+    // print("pledgedUser from firebase is $pledgedUser");
+    // List<Map<String, dynamic>> result = await myData.rawQuery('SELECT userID FROM Pledges WHERE giftID = $giftid');
+
+    return result;
   }
   Future<int> getPledgesFromFirebase(int giftid) async {
     final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
@@ -706,6 +715,7 @@ class DatabaseService {
               'imageurl': gift['imageurl'],
               'description': gift['description'],
               'pledged': gift['pledged'],
+              'notificationSent': false
             });
             print("Added gift with ID $giftId to event ${gift['eventID']} for user $userId");
           } else {
@@ -740,6 +750,7 @@ class DatabaseService {
               'imageurl': gift['imageurl'],
               'description': gift['description'],
               'pledged': gift['pledged'],
+              'notificationSent': false
             });
             print("Added gift with ID $giftId to event ${gift['eventID']} for user $userId");
           } else {
@@ -775,7 +786,8 @@ class DatabaseService {
           return friends.contains(friendId);
         } else if (snapshot.value is List) {
           // If the data is a List, check if the friendId is present
-          final friends = List<int>.from(snapshot.value as List);
+          // skip nulls
+          final friends = (snapshot.value as List).where((element) => element != null).map((e) => int.parse(e.toString())).toList();
           return friends.contains(friendId);
         } else {
           print("Unexpected data format: ${snapshot.value}");
@@ -1103,12 +1115,19 @@ class DatabaseService {
           final events = (snapshot.value as Map).values.map((event) {
             return Map<String, dynamic>.from(event as Map);
           }).toList();
-          // print("events are $events for user $userId");
+          print("events are $events for user $userId, it's a map");
           // print("event id is $eventId");
 
           // Loop through all events and find the event with the matching eventId
           for (var event in events) {
+            if (event == null)
+            {
+              continue;
+            }
             if (event['eventId'] == eventId) {
+              if (event['gifts']== null){
+                continue;
+              }
               // Ensure the 'gifts' key exists and is a list of maps
               if (event['gifts'] is List) {
                 return (event['gifts'] as List).map((gift) {
@@ -1127,29 +1146,43 @@ class DatabaseService {
             }
           }
         } else if (snapshot.value is List) {
+
           // Handle the case where the snapshot value is a List
           final events = (snapshot.value as List).map((event) {
             return Map<String, dynamic>.from(event as Map);
           }).toList();
-          // print("events are $events for user $userId");
+          print("events are $events for user $userId, its a list");
           // print("event id is $eventId");
 
           // Loop through all events and find the event with the matching eventId
           for (var event in events) {
+            if (event == null)
+            {
+              continue;
+            }
+
             // print("event gifts are ${event['gifts']}");
             if (event['eventId'] == eventId) {
+              print("event['gifts'] is ${event['gifts']}");
+              if (event['gifts']== null){
+                continue;
+              }
               // Ensure the 'gifts' key exists and is a list of maps
               if (event['gifts'] is List) {
-                // print ("yes it is a list");
-                return (event['gifts'] as List).map((gift) {
-                  return Map<String, dynamic>.from(gift as Map);
-                }).toList();
+                print ("yes it is a list");
+              //   filter nulls first
+                return (event['gifts'] as List)
+                    .where((element) => element != null && element is Map) // Exclude null and non-Map elements
+                    .map((e) => Map<String, dynamic>.from(e as Map))
+                    .toList();
               }
               else if (event['gifts'] is Map) {
-                // print ("yes it is a map");
-                return (event['gifts'] as Map).values.map((gift) {
-                  return Map<String, dynamic>.from(gift as Map);
-                }).toList();
+                print ("yes it is a map");
+              //   filter nulls first
+                return (event['gifts'] as Map).values
+                    .where((element) => element != null && element is Map) // Exclude null and non-Map elements
+                    .map((e) => Map<String, dynamic>.from(e as Map))
+                    .toList();
               }
               else {
                 print("Gifts for event $eventId are not in the expected format.");

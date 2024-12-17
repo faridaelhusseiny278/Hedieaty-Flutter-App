@@ -45,37 +45,50 @@ class _GiftListPage extends State<GiftListPage> {
   Future<void> _loadAllGifts() async {
     try {
       // Fetch all gifts from the database
-      List<Map<String, dynamic>> value = await dbService.readData("SELECT * from Gifts");
+      List<Map<String, dynamic>> value = await dbService.readData("SELECT * FROM Gifts");
 
-      for (var element in value) {
-        if (element['eventID'] == widget.eventid) {
-          // Create a modifiable copy of the element
-          Map<String, dynamic> modifiableElement = Map<String, dynamic>.from(element);
+      // Create a modifiable copy of value
+      List<Map<String, dynamic>> modifiableValue = List<Map<String, dynamic>>.from(value);
 
+      for (var giftData in modifiableValue) {
+        // Only process gifts related to the current event
+        if (giftData['eventID'] == widget.eventid) {
+          // Fetch gifts for event friends from Firebase
+          List<Map<String, dynamic>> giftsFirebase = await dbService.getGiftsForEventFriends(giftData['eventID'], widget.userid);
 
-          // Fetch pledges for the gift
-          var friendId = await dbService.getPledges(modifiableElement['giftid']);
-          if (friendId != -1) {
-            // get friend name from the database by the friend id
-            List<Map> Response = await dbService.readData(
-                "SELECT * from Users");
-            for (int i = 0; i < Response.length; i++) {
-              if (Response[i]['userid'] == friendId) {
-                modifiableElement['pledgedby'] = Response[i]['name'];
-              }
+          // Create a mutable copy of the current gift map
+          Map<String, dynamic> modifiableGift = Map<String, dynamic>.from(giftData);
+
+          for (var firebaseGift in giftsFirebase) {
+            if (firebaseGift['giftid'] == modifiableGift['giftid']) {
+              // Fetch pledged status from Firebase
+              print("Gift ID match found, updating pledged status...");
+              modifiableGift['pledged'] = firebaseGift['pledged'];
+              print("Pledged status updated.");
             }
           }
-          else {
-            modifiableElement['pledgedby'] = '';
+
+          // Fetch the friend ID who pledged for the gift
+          var friendId = await dbService.getPledges(modifiableGift['giftid']);
+          if (friendId != -1) {
+            // Get the friend's name from the database by the friend ID
+            List<Map> usersResponse = await dbService.readData("SELECT * FROM Users");
+            for (var user in usersResponse) {
+              if (user['userid'] == friendId) {
+                modifiableGift['pledgedby'] = user['name'];
+                break;
+              }
+            }
+          } else {
+            modifiableGift['pledgedby'] = '';
           }
 
           // Update the UI with the filtered gifts
           setState(() {
-            filteredGifts.add(modifiableElement);
-            allGifts.add(modifiableElement);
+            filteredGifts.add(modifiableGift);
+            allGifts.add(modifiableGift);
           });
         }
-
       }
     } catch (e) {
       print("Error loading gifts: $e");
@@ -83,6 +96,9 @@ class _GiftListPage extends State<GiftListPage> {
 
     print("All filtered gifts loaded: $filteredGifts");
   }
+
+
+
   Future<void> deleteActions(List<Map<String, dynamic>> actions) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_${widget.userid.toString()}_gifts_actions');

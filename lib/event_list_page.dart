@@ -571,6 +571,7 @@ class _EventFormState extends State<EventForm> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextFormField(
+              key: Key('eventNameField'),
               controller: _nameController,
               decoration: InputDecoration(labelText: 'Event Name'),
               validator: (value) {
@@ -581,6 +582,7 @@ class _EventFormState extends State<EventForm> {
               },
             ),
             TextFormField(
+              key: Key('eventCategoryField'),
               controller: _categoryController,
               decoration: InputDecoration(labelText: 'Category'),
               validator: (value) {
@@ -591,6 +593,7 @@ class _EventFormState extends State<EventForm> {
               },
             ),
             DropdownButtonFormField<String>(
+              key: Key('eventStatusField'),
               value: _statusController.text.isNotEmpty
                   ? _statusController.text
                   : null,
@@ -612,6 +615,7 @@ class _EventFormState extends State<EventForm> {
               },
             ),
             TextFormField(
+              key: Key('eventLocationField'),
               controller: _locationController,
               decoration: InputDecoration(labelText: 'Location'),
               validator: (value) {
