@@ -21,6 +21,9 @@ void main() async {
   print("Starting app");
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+  final FirebaseDatabase database = FirebaseDatabase.instance;
+  database.setPersistenceEnabled(true);
+  database.setPersistenceCacheSizeBytes(10000000);
   await FirebaseApi().initNotifications();
 
   debugPaintSizeEnabled = false;
@@ -46,8 +49,9 @@ class MyApp extends StatelessWidget {
 
 class MainScreen extends StatefulWidget {
   final int userId; // Accept userId as parameter
+  bool testing;
 
-  MainScreen({required this.userId});
+  MainScreen({required this.userId, this.testing = false});
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -161,7 +165,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             physics: const NeverScrollableScrollPhysics(),
             children: [
               EventListPage(userid: widget.userId, db: dbService),
-              HomePage(userid: widget.userId, dbService: dbService, motionTabBarController: _motionTabBarController),
+              HomePage(userid: widget.userId, dbService: dbService, motionTabBarController: _motionTabBarController, testing: widget.testing),
               PledgedListPage(userid: widget.userId, dbService: dbService),
               ProfilePage(userid: widget.userId, dbService: dbService),
             ],

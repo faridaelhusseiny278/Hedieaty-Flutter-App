@@ -36,9 +36,9 @@ class DatabaseService {
   Future<Database> init() async {
     print ("i'm in init database noww!!!");
     String path = join(await getDatabasesPath(), 'hedeaty.db');
-
-      await deleteDatabase(path);
-      print("database deleted");
+      //
+      // await deleteDatabase(path);
+      // print("database deleted");
 
     // check if the database path exists annd all tables do exist
     var db = await openDatabase(path);
@@ -1885,8 +1885,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   Future<List<Map<String, dynamic>>> getPledgedGiftsWithDetailsfromfirebase(int userId) async {
     try {
       // Reference to the user's pledged gifts node
-      final DatabaseReference pledgedGiftsRef =
-      FirebaseDatabase.instance.ref("Users/$userId/pledgedgifts");
+      final DatabaseReference pledgedGiftsRef = FirebaseDatabase.instance.ref("Users/$userId/pledgedgifts");
 
       // Fetch the snapshot of the pledged gifts
       final DataSnapshot pledgedGiftsSnapshot = await pledgedGiftsRef.get();
@@ -1894,65 +1893,149 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
       // Prepare the result list
       List<Map<String, dynamic>> pledgedGiftsWithDetails = [];
 
-      if (pledgedGiftsSnapshot.exists && pledgedGiftsSnapshot.value is Map) {
-        final pledgedGiftsMap = pledgedGiftsSnapshot.value as Map;
+      if (pledgedGiftsSnapshot.exists) {
+        if (pledgedGiftsSnapshot.value is Map) {
+          print("pledgedgiftsnapshot is a map, ${pledgedGiftsSnapshot.value}");
+          final pledgedGiftsMap = pledgedGiftsSnapshot.value as Map;
 
-        // Iterate through friends in the pledged gifts map
-        for (var friendId in pledgedGiftsMap.keys) {
-          final friendGifts = pledgedGiftsMap[friendId] as Map;
+          // Iterate through friends in the pledged gifts map
+          for (var friendId in pledgedGiftsMap.keys) {
+            final friendGifts = pledgedGiftsMap[friendId] as List;
+            print("friendGifts are $friendGifts");
 
-          // Fetch friend details
-          final DatabaseReference friendRef = FirebaseDatabase.instance.ref("Users/$friendId");
-          final DataSnapshot friendSnapshot = await friendRef.get();
+            // Fetch friend details
+            final DatabaseReference friendRef = FirebaseDatabase.instance.ref("Users/$friendId");
+            final DataSnapshot friendSnapshot = await friendRef.get();
 
-          if (friendSnapshot.exists && friendSnapshot.value is Map) {
-            final friendData = friendSnapshot.value as Map;
-            final String friendName = friendData["name"] ?? "Unknown";
-            final String friendImageUrl = friendData["imageurl"] ?? "";
-            final int friendId = friendData["userid"];
+            if (friendSnapshot.exists && friendSnapshot.value is Map) {
+              print("friendsnapshot is a map, ${friendSnapshot.value}");
+              final friendData = friendSnapshot.value as Map;
+              final String friendName = friendData["name"] ?? "Unknown";
+              final String friendImageUrl = friendData["imageurl"] ?? "";
+              final int friendId = friendData["userid"];
 
-            // Fetch friend's events
-            final DatabaseReference eventsRef = friendRef.child("events");
-            final DataSnapshot eventsSnapshot = await eventsRef.get();
+              // Fetch friend's events
+              final DatabaseReference eventsRef = friendRef.child("events");
+              final DataSnapshot eventsSnapshot = await eventsRef.get();
 
-            if (eventsSnapshot.exists && eventsSnapshot.value is List) {
-              final eventsList = eventsSnapshot.value as List;
+              if (eventsSnapshot.exists && eventsSnapshot.value is List) {
+                final eventsList = eventsSnapshot.value as List;
 
-              // Iterate through events
-              for (var eventIndex = 0; eventIndex < eventsList.length; eventIndex++) {
-                final eventData = eventsList[eventIndex];
+                // Iterate through events
+                for (var eventIndex = 0; eventIndex < eventsList.length; eventIndex++) {
+                  final eventData = eventsList[eventIndex];
 
-                // Skip null entries
-                if (eventData == null) continue;
+                  // Skip null entries
+                  if (eventData == null) continue;
 
-                if (eventData is Map && eventData.containsKey("gifts") && eventData["gifts"] is List) {
-                  final giftsList = eventData["gifts"] as List;
+                  if (eventData is Map && eventData.containsKey("gifts") && eventData["gifts"] is List) {
+                    final giftsList = eventData["gifts"] as List;
 
-                  // Iterate through gifts in the event
-                  for (var giftIndex = 0; giftIndex < giftsList.length; giftIndex++) {
-                    final giftData = giftsList[giftIndex];
+                    // Iterate through gifts in the event
+                    for (var giftIndex = 0; giftIndex < giftsList.length; giftIndex++) {
+                      final giftData = giftsList[giftIndex];
 
-                    // Skip null entries
-                    if (giftData == null) continue;
+                      // Skip null entries
+                      if (giftData == null) continue;
 
-                    // Check if the gift is pledged by the user
-                    final uniqueGiftId = friendGifts.keys.firstWhere(
-                            (key) => friendGifts[key] == giftData["giftid"],
-                        orElse: () => null);
+                      // Check if the gift is pledged by the user
+                      final uniqueGiftId = friendGifts.firstWhere(
+                              (key) => key == giftData["giftid"],
+                          orElse: () => null);
 
-                    if (uniqueGiftId != null) {
-                      // Add gift details to the result list
-                      pledgedGiftsWithDetails.add({
-                        "giftid": giftData["giftid"],
-                        "giftName": giftData["giftName"],
-                        "category": giftData["category"],
-                        "pledged": giftData["pledged"],
-                        "friendName": friendName,
-                        "friendImageUrl": friendImageUrl,
-                         "friendId": friendId,
-                        "eventName": eventData["eventName"],
-                        "eventDate": eventData["eventDate"],
-                      });
+                      if (uniqueGiftId != null) {
+                        // Add gift details to the result list
+                        pledgedGiftsWithDetails.add({
+                          "giftid": giftData["giftid"],
+                          "giftName": giftData["giftName"],
+                          "category": giftData["category"],
+                          "pledged": giftData["pledged"],
+                          "friendName": friendName,
+                          "friendImageUrl": friendImageUrl,
+                          "friendId": friendId,
+                          "eventName": eventData["eventName"],
+                          "eventDate": eventData["eventDate"],
+                        });
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } else if (pledgedGiftsSnapshot.value is List) {
+          print("pledgedgiftsnapshot is a list, ${pledgedGiftsSnapshot.value}");
+          final pledgedGiftsList = pledgedGiftsSnapshot.value as List;
+
+          for (var giftIds in pledgedGiftsList) {
+            print("giftIds is $giftIds");
+            // Get the index of the current element
+            final friendIdIndex = pledgedGiftsList.indexOf(giftIds);
+
+            // Fetch friend details
+            final DatabaseReference friendRef = FirebaseDatabase.instance.ref("Users/$friendIdIndex");
+            final DataSnapshot friendSnapshot = await friendRef.get();
+
+            if (friendSnapshot.exists && friendSnapshot.value is Map) {
+              print("friendsnapshot is a map, ${friendSnapshot.value}");
+              final friendData = friendSnapshot.value as Map;
+              final String friendName = friendData["name"] ?? "Unknown";
+              final String friendImageUrl = friendData["imageurl"] ?? "";
+              final int friendId = friendData["userid"];
+
+              // Fetch friend's events
+              final DatabaseReference eventsRef = friendRef.child("events");
+              final DataSnapshot eventsSnapshot = await eventsRef.get();
+
+              if (eventsSnapshot.exists && eventsSnapshot.value is List) {
+                // print("eventsnapshot is a list, ${eventsSnapshot.value}");
+                final eventsList = eventsSnapshot.value as List;
+
+                // Iterate through events
+                for (var eventIndex = 0; eventIndex < eventsList.length; eventIndex++) {
+                  final eventData = eventsList[eventIndex];
+
+                  // Skip null entries
+                  if (eventData == null) continue;
+
+                  if (eventData is Map && eventData.containsKey("gifts") && eventData["gifts"] is List) {
+                    // print("eventData is a map, ${eventData["gifts"]}");
+                    if (eventData['gifts']==null)
+                      {
+                        continue;
+                      }
+                    final giftsList = eventData["gifts"] as List;
+                  // print("giftsList is $giftsList");
+
+                    // Iterate through gifts in the event
+                    for (var giftIndex = 0; giftIndex < giftsList.length; giftIndex++) {
+                      final giftData = giftsList[giftIndex];
+
+                      // Skip null entries
+                      if (giftData == null) continue;
+
+                      // Check if the gift is pledged by the user
+                      // check if the gift id is in the list which is called giftids
+                      final uniqueGiftId = giftIds.firstWhere(
+                              (key) => key == giftData["giftid"],
+                          orElse: () => null);
+
+                      print("uniqueGiftId is $uniqueGiftId");
+
+                      if (uniqueGiftId != null) {
+                        // Add gift details to the result list
+                        pledgedGiftsWithDetails.add({
+                          "giftid": giftData["giftid"],
+                          "giftName": giftData["giftName"],
+                          "category": giftData["category"],
+                          "pledged": giftData["pledged"],
+                          "friendName": friendName,
+                          "friendImageUrl": friendImageUrl,
+                          "friendId": friendId,
+                          "eventName": eventData["eventName"],
+                          "eventDate": eventData["eventDate"],
+                        });
+                      }
                     }
                   }
                 }
@@ -1960,9 +2043,12 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
             }
           }
         }
+        return pledgedGiftsWithDetails;
       }
-
-      return pledgedGiftsWithDetails;
+      else{
+        print("No pledged gifts found for user $userId.");
+        return [];
+      }
     } catch (e) {
       print("Error fetching pledged gifts with details for user $userId: $e");
       throw e;

@@ -22,7 +22,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
   }
 
   Future<void> _loadPledgedGifts() async {
-    final results = await widget.dbService.getPledgedGiftsWithDetailsfromDatabase(widget.userid);
+    final results = await widget.dbService.getPledgedGiftsWithDetailsfromfirebase(widget.userid);
     print("results are $results");
 
     setState(() {

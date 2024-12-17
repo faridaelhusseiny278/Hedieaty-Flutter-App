@@ -5,6 +5,8 @@ import 'main.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  bool testing;
+  LoginScreen({this.testing = false});
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -37,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => MainScreen(userId: userKey),
+                builder: (context) => MainScreen(userId: userKey, testing: widget.testing),
               ),
             );
           }
@@ -48,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => MainScreen(userId: user['userid']),
+                  builder: (context) => MainScreen(userId: user['userid'], testing: widget.testing),
                 ),
               );
             }

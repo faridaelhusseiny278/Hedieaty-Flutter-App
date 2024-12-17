@@ -25,8 +25,10 @@ class HomePage extends StatefulWidget {
   DatabaseService dbService = DatabaseService();
   // initialize _motionTabBarController
   late MotionTabBarController motionTabBarController;
+  bool testing;
 
-  HomePage({required this.userid, required this.dbService, required this.motionTabBarController});
+  HomePage({required this.userid, required this.dbService, required this.motionTabBarController,
+  this.testing= false});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -52,11 +54,14 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     print("in init state of home page now!");
     super.initState();
-    _requestNotificationPermissions();
-    _notificationService = AppNotificationService(userid: widget.userid);
     _loadFriendsList();
-    _printDatabase();
-    _loadNotifications();
+    if (widget.testing == false){
+      _requestNotificationPermissions();
+      _notificationService = AppNotificationService(userid: widget.userid);
+      _printDatabase();
+      _loadNotifications();
+    }
+
 
     _searchController.addListener(() {
 
