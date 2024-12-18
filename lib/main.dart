@@ -16,21 +16,32 @@ import 'package:hedieatyfinalproject/Notification.dart';
 import 'NotificationService.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'firebase_api.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firebasedatabase_helper.dart';
 
 void main() async {
   print("Starting app");
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  final FirebaseDatabase database = FirebaseDatabase.instance;
-  database.setPersistenceEnabled(true);
-  database.setPersistenceCacheSizeBytes(10000000);
+  await FirebaseDatabaseHelper.initializeDatabase();
+  User? currentUser = FirebaseAuth.instance.currentUser;
+  DatabaseService dbService = DatabaseService();
+  int userid = await dbService.getUserIdByEmailFromFirebase((currentUser!.email)!);
+
+
   await FirebaseApi().initNotifications();
 
   debugPaintSizeEnabled = false;
-  runApp(MyApp());
+  runApp(MyApp(isLoggedIn: currentUser != null
+      , userid: userid, dbService: dbService));
 }
 
 class MyApp extends StatelessWidget {
+  final bool isLoggedIn;
+  final int userid;
+  final DatabaseService dbService;
+  const MyApp({required this.isLoggedIn, required this.userid, required this.dbService});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -42,7 +53,8 @@ class MyApp extends StatelessWidget {
           secondary: const Color(0xFFB3E5FC),
         ),
       ),
-      home: WelcomeScreen(), // Start with LoginSignupScreen
+      home: isLoggedIn ?
+         MainScreen(userId: userid): WelcomeScreen(),
     );
   }
 }
@@ -88,8 +100,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void _startFirebaseListener() {
     final AppNotificationService _notificationService =
     AppNotificationService(userid: widget.userId);
-    final DatabaseReference dbRef =
-    FirebaseDatabase.instance.ref("Users/${widget.userId}/events");
+    final dbRef =
+    FirebaseDatabaseHelper.getReference("Users/${widget.userId}/events");
 
     dbRef.onValue.listen((event) async {
       final data = event.snapshot.value;

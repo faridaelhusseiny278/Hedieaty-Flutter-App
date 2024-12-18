@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/welcome_screen.dart';
 import 'my_pledged_gifts_page.dart';
 import 'database.dart';
 class ProfilePage extends StatefulWidget {
@@ -62,8 +63,13 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
   void _logout() {
-    // Navigate back to the login page
-    Navigator.pop(context);
+    // Navigate back to the welcome screen (do not pop)
+    Navigator.pushReplacement(
+        context,
+      MaterialPageRoute(
+        builder: (context) => WelcomeScreen(),
+      ),
+    );
   }
 
 

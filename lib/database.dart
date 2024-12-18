@@ -1854,6 +1854,53 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
     }
   }
 
+  // get user id by email
+  Future<int> getUserIdByEmailFromFirebase(String email) async {
+    try {
+      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
+
+      // Fetch the snapshot of the users node
+      final DataSnapshot snapshot = await dbRef.get();
+      print("snapshot is $snapshot");
+
+      if (snapshot.exists) {
+        //
+        if (snapshot.value is Map) {
+          final users = (snapshot.value as Map).values.map((user) {
+            return Map<String, dynamic>.from(user as Map);
+          }).toList();
+          // print("users are $users");
+
+          for (var user in users) {
+            if (user['email'] == email) {
+              return user['userid'];
+            }
+          }
+        } else if (snapshot.value is List) {
+          final users = (snapshot.value as List)
+              .where((user) => user != null) // Exclude null users
+              .map((user) => Map<String, dynamic>.from(user as Map))
+              .toList();
+          for (var user in users) {
+            if (user['email'] == email) {
+              return user['userid'];
+            }
+          }
+        } else {
+          print("Unexpected data format: ${snapshot.value}");
+          return 0;
+        }
+      } else {
+        print("No users found in the database.");
+        return 0;
+      }
+      return 0;
+    } catch (e) {
+      print("Error fetching user by email: $e");
+      throw e;
+    }
+  }
+
 
   Future<List<Map<String, dynamic>>> getPledgedGiftsWithDetailsfromDatabase(int userId) async {
     Database myData = await db;
