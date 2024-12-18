@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'main.dart';
 import 'signup_screen.dart';
+import 'database.dart';
 
 class LoginScreen extends StatefulWidget {
   bool testing;
@@ -11,16 +12,42 @@ class LoginScreen extends StatefulWidget {
   _LoginScreenState createState() => _LoginScreenState();
 }
 
+
+
 class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  String? emailError;
+
+
+  Future<void> _validateEmail(String email) async {
+    DatabaseService dbService = DatabaseService();
+    setState(() {
+      emailError = null; // Reset error
+    });
+    if (email.isEmpty) {
+      setState(() {
+        emailError = 'Email cannot be empty';
+      });
+    } else if (!RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").hasMatch(email)) {
+      setState(() {
+        emailError = 'Enter a valid email address';
+      });
+    }
+  }
 
   Future<void> _login() async {
     try {
+      if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+        _showError("Please fill in both email and password.");
+        return;
+      }
+
       final DatabaseReference _dbRef = FirebaseDatabase.instance.ref("Users");
+      // remove white spaces and lower the emailcontroller.text
       UserCredential user = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
+        email: _emailController.text.trim().toLowerCase(),
         password: _passwordController.text,
       );
 
@@ -57,9 +84,32 @@ class _LoginScreenState extends State<LoginScreen> {
           }
         }
       }
+    } on FirebaseAuthException catch (e) {
+      _showError(_handleFirebaseAuthError(e));
     } catch (e) {
-      print("Failed to login: $e");
+      _showError("An unexpected error occurred. Please try again.");
     }
+  }
+
+  String _handleFirebaseAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'invalid-credential':
+        return "Incorrect email or password. Please try again.";
+      case 'network-request-failed':
+        return "Network error. Please check your internet connection.";
+      default:
+        return "Authentication failed. Please try again.";
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -105,9 +155,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 40),
                   TextField(
                     controller: _emailController,
+                    onChanged: (email) => _validateEmail(email),
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(
                       labelText: "Email",
+                      errorText: emailError,
                       labelStyle: const TextStyle(color: Colors.white70),
                       prefixIcon: const Icon(Icons.email, color: Colors.white70),
                       filled: true,
@@ -203,5 +255,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-
 }

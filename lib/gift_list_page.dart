@@ -568,6 +568,8 @@ class _GiftListPage extends State<GiftListPage> {
 
                           if (updatedGift != null) {
                             await dbService.updateGiftForUser(updatedGift, gift['giftid'], widget.userid);
+
+                            updatedGift['eventID'] = widget.eventid;
                             actions.add({
                               'action': 'update',
                               'gift': updatedGift

@@ -78,11 +78,18 @@ flutter:
 
   # To add assets to your application, add an assets section, like this:
   assets:
-     - assets\istockphoto-1296058958-612x612.jpg
-     - assets\istockphoto-1371904269-612x612.jpg
-     - assets\istockphoto-1417086080-612x612.jpg
-     - assets\young-smiling-man-adam-avatar-600nw-2107967969.png
-     - assets/young-smiling-woman-mia-avatar-600nw-2127358541.png
+     - assets/free/3d-illustration-with-online-avatar_23-2151303043.jpg
+     - assets/free/3d-illustration-with-online-avatar_23-2151303045.jpg
+     - assets/free/3d-illustration-with-online-avatar_23-2151303053.jpg
+     - assets/free/3d-illustration-with-online-avatar_23-2151303055.jpg
+     - assets/free/3d-illustration-with-online-avatar_23-2151303080.jpg
+     - assets/free/3d-illustration-with-online-avatar_23-2151303097.jpg
+     - assets/free/3d-illustration-with-online-avatar_23-2151303093.jpg
+     - assets/free/3d-rendering-hair-style-avatar-design_23-2151869121.jpg
+     - assets/free/3d-rendering-hair-style-avatar-design_23-2151869153.jpg
+     - assets/free/df5f5b1b174a2b4b6026cc6c8f9395c1.jpg
+     - assets/free/young-man-with-glasses-avatar_1308-173760.jpg
+     - assets/istockphoto-1296058958-612x612.jpg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

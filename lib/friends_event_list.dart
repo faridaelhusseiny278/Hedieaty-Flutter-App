@@ -134,85 +134,103 @@ class _FriendsEventListState extends State<FriendsEventList> {
       margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       color: Colors.deepPurple[50],
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.0),  // Softer, more rounded corners
+        borderRadius: BorderRadius.circular(20.0), // Softer, more rounded corners
       ),
       elevation: 6,
-      shadowColor: Colors.black.withOpacity(0.1),  // Subtle shadow
+      shadowColor: Colors.black.withOpacity(0.1), // Subtle shadow
       child: InkWell(
         onTap: () {
           _toggleEventSelection(event);
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => FriendsGiftList(event: event ,userid: widget.userid, dbService: widget.dbService, friendid: widget.frienddata['userid'],),
+              builder: (context) => FriendsGiftList(
+                event: event,
+                userid: widget.userid,
+                dbService: widget.dbService,
+                friendid: widget.frienddata['userid'],
+              ),
             ),
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(18.0),  // More padding for spacious look
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // friendEvent name with bigger font size and bold style
-              Text(
-                event.name,
-                style: TextStyle(
-                  fontWeight: FontWeight.w700, // Bold weight for name
-                  fontSize: 20, // Larger font size
-                  color: Colors.black,
+          padding: const EdgeInsets.all(18.0), // More padding for spacious look
+          child: SingleChildScrollView(  // Wrap content in a SingleChildScrollView
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // friendEvent name with bigger font size and bold style
+                Text(
+                  event.name,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700, // Bold weight for name
+                    fontSize: 20, // Larger font size
+                    color: Colors.black,
+                  ),
+                  overflow: TextOverflow.ellipsis,  // Prevent overflow
+                  maxLines: 1,  // Limit to one line if the text is too long
                 ),
-              ),
-              SizedBox(height: 12), // Space between name and other info
-              // Category and status with smaller font size and color for subtlety
-              Row(
-                children: [
-                  Icon(Icons.category, color: Colors.deepPurple, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    event.category,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
+                SizedBox(height: 12), // Space between name and other info
+                // Category and status with smaller font size and color for subtlety
+                Row(
+                  children: [
+                    Icon(Icons.category, color: Colors.deepPurple, size: 18),
+                    SizedBox(width: 8),
+                    Flexible(  // Ensure text can flex if too long
+                      child: Text(
+                        event.category,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,  // Prevent overflow
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 20), // Space between category and status
-                  Icon(statusIcon, color: statusColor, size: 18), // Dynamic status icon
-                  SizedBox(width: 8),
-                  Text(
-                    event.status,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
+                    SizedBox(width: 20), // Space between category and status
+                    Icon(statusIcon, color: statusColor, size: 18), // Dynamic status icon
+                    SizedBox(width: 8),
+                    Flexible(  // Ensure text can flex if too long
+                      child: Text(
+                        event.status,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[700],
+                        ),
+                        overflow: TextOverflow.ellipsis,  // Prevent overflow
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 12), // Space between category/status and location/date
-              // Location and date
-              Row(
-                children: [
-                  Icon(Icons.location_on, color: Colors.blueAccent, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    event.location,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                  ],
+                ),
+                SizedBox(height: 12), // Space between category/status and location/date
+                // Location and date
+                Row(
+                  children: [
+                    Icon(Icons.location_on, color: Colors.blueAccent, size: 18),
+                    SizedBox(width: 8),
+                    Flexible(  // Ensure text can flex if too long
+                      child: Text(
+                        event.location,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                        overflow: TextOverflow.ellipsis,  // Prevent overflow
+                      ),
                     ),
-                  ),
-                  SizedBox(width: 20), // Space between location and date
-                  Icon(Icons.calendar_today, color: Colors.orange, size: 18),
-                  SizedBox(width: 8),
-                  Text(
-                    DateFormat.yMMMd().format(event.date), // Formatted date
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                    SizedBox(width: 20), // Space between location and date
+                    Icon(Icons.calendar_today, color: Colors.orange, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      DateFormat.yMMMd().format(event.date), // Formatted date
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

@@ -23,24 +23,29 @@ void main() async {
   print("Starting app");
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
   await FirebaseDatabaseHelper.initializeDatabase();
+  // FirebaseDatabase.instance.goOffline();
   User? currentUser = FirebaseAuth.instance.currentUser;
   DatabaseService dbService = DatabaseService();
   int userid = await dbService.getUserIdByEmailFromFirebase((currentUser!.email)!);
+  // call get user by id for friends
+  Map<String, dynamic>? user= await dbService.getUserByIdforFriends(userid);
 
 
   await FirebaseApi().initNotifications();
 
   debugPaintSizeEnabled = false;
   runApp(MyApp(isLoggedIn: currentUser != null
-      , userid: userid, dbService: dbService));
+      , userid: userid, dbService: dbService, user: user!));
 }
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
   final int userid;
   final DatabaseService dbService;
-  const MyApp({required this.isLoggedIn, required this.userid, required this.dbService});
+  final Map<String, dynamic> user;
+  const MyApp({required this.isLoggedIn, required this.userid, required this.dbService, required this.user});
 
   @override
   Widget build(BuildContext context) {
@@ -54,7 +59,7 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: isLoggedIn ?
-         MainScreen(userId: userid): WelcomeScreen(),
+         MainScreen(userId: userid, user: user): WelcomeScreen(),
     );
   }
 }
@@ -62,8 +67,9 @@ class MyApp extends StatelessWidget {
 class MainScreen extends StatefulWidget {
   final int userId; // Accept userId as parameter
   bool testing;
+  Map<String, dynamic> user;
 
-  MainScreen({required this.userId, this.testing = false});
+  MainScreen({required this.userId, this.testing = false, this.user = const {}});
 
   @override
   _MainScreenState createState() => _MainScreenState();
@@ -74,6 +80,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   DatabaseService dbService = DatabaseService();
   String? _headerNotification;
   bool _showHeaderNotification = false;
+  List<AppNotification> _notificationQueue = [];
 
   @override
   void initState() {
@@ -90,18 +97,65 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         _motionTabBarController.index = 1;
       });
     });
+    _loadStoredNotifications();
 
   }
 
   // void _syncDatabaseWithFirebase() async {
   //   await dbService.syncDatabasewithFirebase(widget.userId);
   // }
+  Future<void> _loadStoredNotifications() async {
+    final AppNotificationService _notificationService =
+    AppNotificationService(userid: widget.userId);
+    List<AppNotification> notifications = await _notificationService.getNotifications();
 
+    setState(() {
+      _notificationQueue = notifications;
+    });
+
+    // Show notifications sequentially after a delay
+    _showNotificationsSequentially();
+  }
+
+  Future<void> _showNotificationsSequentially() async {
+    final AppNotificationService _notificationService =
+    AppNotificationService(userid: widget.userId);
+
+    for (var notification in _notificationQueue) {
+      if (notification.isSent== true) {
+        continue;
+      }
+      // Wait for a small duration before showing the next notification
+      await Future.delayed(Duration(seconds: 2));
+
+      setState(() {
+        // set the notification as sent in the firebase
+        notification.isSent = true;
+        print("marking notification as sent");
+        _notificationService.markNotificationAsSent(notification);
+        _headerNotification = notification.message;
+        _showHeaderNotification = true;
+      });
+
+      // Auto-hide the notification after 3 seconds
+      await Future.delayed(Duration(seconds: 3));
+
+      setState(() {
+        _showHeaderNotification = false;
+      });
+    }
+
+    // Clear the queue after processing
+    setState(() {
+      _notificationQueue.clear();
+    });
+  }
   void _startFirebaseListener() {
     final AppNotificationService _notificationService =
     AppNotificationService(userid: widget.userId);
     final dbRef =
     FirebaseDatabaseHelper.getReference("Users/${widget.userId}/events");
+
 
     dbRef.onValue.listen((event) async {
       final data = event.snapshot.value;
@@ -120,7 +174,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               if (gift == null) {
                 continue;
               }
-              if (gift['pledged'] == true && gift['notificationSent'] == false) {
+              print("now sending notification to user ${widget.userId} who has notification preferences ${widget.user['notification_preferences']}");
+              if (gift['pledged'] == true && gift['notificationSent'] == false && (widget.user['notification_preferences'].contains('Push Notifications'))) {
                 String message =
                     '${gift['giftName']} has been pledged for the event ${event['eventName']}!';
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// import 'package:hedieatyfinalproject/friends_event_list.dart';
 import 'rounded_button.dart';
 import 'friend_card.dart';
 import 'friends_event_list.dart';
@@ -11,6 +10,7 @@ import 'NotificationService.dart';
 import 'Notification.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'firebasedatabase_helper.dart';
 
 class Friend {
   final String name;
@@ -86,8 +86,7 @@ class _HomePageState extends State<HomePage> {
   }
   // Load notifications from the database
   void _loadNotifications() {
-    final DatabaseReference notificationsRef = FirebaseDatabase.instance
-        .ref("Users/${widget.userid}/notifications");
+    final notificationsRef = FirebaseDatabaseHelper.getReference("Users/${widget.userid}/notifications");
 
     // Listen for changes in the notifications node
     notificationsRef.onValue.listen((event) {
@@ -142,24 +141,33 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadFriendsList() async {
     var friendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
 
-    // Clear friends list before adding new ones to avoid duplicates
-    friendsList.clear();
-    filteredFriendsList.clear();
-
-    for (var id in friendsIds) {
-      print("id is: $id");
+    var friendsData = await Future.wait(friendsIds.map((id) async {
       var friendData = await widget.dbService.getUserByIdforFriends(id);
-      friendsList.add(friendData!);
-
-      var eventcount = await widget.dbService.getEventCountForUserFriends(friendData['userid'].toString());
-      eventCounts[friendData['userid']] = eventcount;
-    }
+      var eventCount = await widget.dbService.getEventCountForUserFriends(
+          friendData!['userid'].toString());
+      return {
+        'friend': friendData,
+        'eventCount': eventCount,
+      };
+    }));
 
     setState(() {
-      filteredFriendsList = List.from(friendsList); // Set filtered list after loading
-      isLoading = false; // Loading completed
+      friendsList = friendsData
+          .map((e) => e['friend'] as Map<String, dynamic>)
+          .toList();
+
+      eventCounts = {
+        for (var friend in friendsData)
+          (friend['friend'] as Map<String, dynamic>)['userid'] as int:
+          friend['eventCount'] as int,
+      };
+
+      filteredFriendsList = List.from(friendsList);
+      isLoading = false;
     });
+
   }
+
 
 
   void _filterFriendsList(String query) async {
@@ -276,12 +284,23 @@ class _HomePageState extends State<HomePage> {
             TextButton(
               onPressed: () {
                 String phoneNumber = phoneController.text.trim();
+                final phoneRegex = RegExp(r'^\+\d{10,15}$');
 
-                if (phoneNumber.isNotEmpty) {
-                  _addFriendByPhoneNumber(phoneNumber); // Add friend by phone number
+                if (phoneNumber.isEmpty) {
+                  // Show an error for an empty phone number
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Phone number cannot be empty.")),
+                  );
+                } else if (!phoneRegex.hasMatch(phoneNumber)) {
+                  // Show an error for an invalid phone number
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Enter a valid phone number starting with + and has from 10-15 digits.")),
+                  );
+                } else {
+                  // Phone number is valid
+                  _addFriendByPhoneNumber(phoneNumber);
+                  Navigator.of(context).pop(); // Close the dialog
                 }
-
-                Navigator.of(context).pop(); // Close the dialog
               },
               child: Text("Add Friend"),
             ),
@@ -291,6 +310,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+
   Future<void> _addFriendByPhoneNumber(String phoneNumber) async {
     print("Attempting to add friend by phone number: $phoneNumber");
 
@@ -299,6 +319,10 @@ class _HomePageState extends State<HomePage> {
 
     if (potentialFriend == null) {
       print("User with phone number $phoneNumber not found in the database.");
+      // show a snackbar message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("User with phone number $phoneNumber not found.")),
+      );
       return;
     }
 
@@ -307,6 +331,9 @@ class _HomePageState extends State<HomePage> {
 
     if (currentFriendsIds.contains(potentialFriend['userid'])) {
       print("You are already friends with ${potentialFriend['name']}!");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("You are already friends with ${potentialFriend['name']}!")),
+      );
       return;
     }
 
@@ -330,6 +357,9 @@ class _HomePageState extends State<HomePage> {
     });
 
     print("You are now friends with ${potentialFriend['name']}!");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("You are now friends with ${potentialFriend['name']}!")),
+    );
   }
 
 
@@ -342,6 +372,7 @@ class _HomePageState extends State<HomePage> {
       return Center(child: CircularProgressIndicator());
     }
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       key: _scaffoldKey,
       appBar: AppBar(
         title: Text('Home Page'),
@@ -442,7 +473,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           Positioned.fill(
-            top: 360,
+            top: 310,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -452,116 +483,114 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.only(top: 120.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                // Header text
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: Center(
-                      child: Text(
-                        "Hediaty",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w300,
-                        ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Header text
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Center(
+                    child: Text(
+                      "Hediaty",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.w300,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(height: 20),
-                // Search box
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  margin: EdgeInsets.symmetric(horizontal: 16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20.0),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.search, color: Colors.grey),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: 'Search friends or gift lists...',
-                            border: InputBorder.none,
-                          ),
+              ),
+              SizedBox(height: 20),
+              // Search box
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: EdgeInsets.symmetric(horizontal: 16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20.0),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.search, color: Colors.grey),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search friends or gift lists...',
+                          border: InputBorder.none,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 20),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    children: [
-                      RoundedButton(
-                        icon: Icons.add,
-                        label: "Create Your Own Event/List",
-                        backgroundColor: Colors.white,
-                        textColor: Colors.black,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  CreateEventPage(
-                                    userid: widget.userid,
-                                  ),
-                            ),
-                          );
-                          setState(() {
-                              widget.motionTabBarController.index = 0;
-                            });
-                        },
-                      ),
-                    ],
-                  ),
+              ),
+              SizedBox(height: 20),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: EdgeInsets.symmetric(horizontal: 16.0),
+                child: Row(
+                  children: [
+                    RoundedButton(
+                      icon: Icons.add,
+                      label: "Create Your Own Event/List",
+                      backgroundColor: Colors.white,
+                      textColor: Colors.black,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CreateEventPage(
+                                  userid: widget.userid,
+                                ),
+                          ),
+                        );
+                        setState(() {
+                          widget.motionTabBarController.index = 0;
+                        });
+                      },
+                    ),
+                  ],
                 ),
-                SizedBox(height: 20),
-                // List of friends with their gift lists and upcoming events
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredFriendsList.length,
-                    itemBuilder: (context, index) {
-                      var friend = filteredFriendsList[index]; // Get the friend data
-                      // print("item count: ${filteredFriendsList.length}");
-                      // print("Friend: $friend");
-                      // print("eventCounts: $eventCounts");
-                      int eventCount = eventCounts[friend['userid']] ?? 0; // Get pre-fetched event count
-                      return FriendCard(
-                        name: friend['name'],
-                        eventCount: eventCount,
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  FriendsEventList(
+              ),
+              SizedBox(height: 20),
+              // List of friends with their gift lists and upcoming events
+              Expanded(
+                child: ListView.builder(
+                  padding: EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: filteredFriendsList.length,
+                  itemBuilder: (context, index) {
+                    var friend = filteredFriendsList[index]; // Get the friend data
+                    // print("item count: ${filteredFriendsList.length}");
+                    // print("Friend: $friend");
+                    // print("eventCounts: $eventCounts");
+                    int eventCount = eventCounts[friend['userid']] ?? 0; // Get pre-fetched event count
+                    return FriendCard(
+                      imageurl: friend['imageurl'],
+                      name: friend['name'],
+                      eventCount: eventCount,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                FriendsEventList(
                                     frienddata: friend,
                                     userid: widget.userid,
-                                      dbService: widget.dbService
-                                  ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                                    dbService: widget.dbService
+                                ),
+                          ),
+                        );
+                      },
+                    );
+                  },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),

@@ -17,17 +17,51 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
   late TextEditingController imageURLController = TextEditingController();
   String selectedCategory = "Tech"; // Default category
   bool isPledged = false; // Default status
+  String? nameError;
+  String? imageUrlError;
+  String? priceError;
 
   @override
   void initState() {
     super.initState();
-    // Initialize controllers with the gift details
     giftNameController = TextEditingController(text: widget.giftDetails['giftName']);
     descriptionController = TextEditingController(text: widget.giftDetails['description'] ?? "");
     priceController = TextEditingController(text: widget.giftDetails['price']?.toString() ?? "");
     imageURLController = TextEditingController(text: widget.giftDetails['imageurl']?.toString() ?? "");
     selectedCategory = widget.giftDetails['category'] ?? "Tech";
     isPledged = (widget.giftDetails['pledged'] == 0 || widget.giftDetails['pledged'] == false) ? false: true;
+  }
+
+  void _validateName(String name) {
+    setState(() {
+      if (name.isEmpty) {
+        nameError = 'Name cannot be empty';
+      } else if (!RegExp(r"^[a-zA-Z\s]{3,50}$").hasMatch(name)) {
+        nameError = 'Enter a valid name (3-50 alphabetic characters)';
+      } else {
+        nameError = null;
+      }
+    });
+  }
+  void _validateImageURL(String url) {
+    setState(() {
+       if (!RegExp(r"^(http|https):\/\/[a-zA-Z0-9-\.]+\.[a-zA-Z]{2,}$").hasMatch(url)) {
+        imageUrlError = 'Enter a valid URL';
+      } else {
+         imageUrlError = null;
+      }
+    });
+  }
+  void _validatePrice(String price) {
+    setState(() {
+      if (price.isEmpty) {
+        priceError = 'Price cannot be empty';
+      } else if (!RegExp(r"^[0-9]*$").hasMatch(price)) {
+        priceError = 'Enter a valid price';
+      } else {
+        priceError = null;
+      }
+    });
   }
 
   @override
@@ -85,6 +119,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                 enabled: !isPledged,
                 decoration: InputDecoration(
                   labelText: "Gift Name",
+                  errorText: nameError,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
@@ -110,6 +145,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                   fillColor: Colors.white,
                   contentPadding: EdgeInsets.all(16),
                 ),
+                onChanged: (name) => _validateName(name),
               ),
               SizedBox(height: 16),
 
@@ -158,7 +194,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                     selectedCategory = newValue!;
                   });
                 },
-                items: ["Tech", "Health", "Books", "Toys", "Clothing", "Experience", "Home", "Event", "Fashion"]
+                items: ["Tech", "Health", "Books", "Toys", "Clothing", "Experience", "Home", "Event", "Fashion","other"]
                     .map((category) => DropdownMenuItem(
                   value: category,
                   child: Text(category),
@@ -177,6 +213,7 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: "Price",
+                  errorText: priceError,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
@@ -202,13 +239,16 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                   fillColor: Colors.white,
                   contentPadding: EdgeInsets.all(16),
                 ),
+                onChanged: (price) => _validatePrice(price),
               ),
               SizedBox(height: 16),
               TextField(
                 controller: imageURLController,
                 enabled: !isPledged,
+                onChanged: (url) => _validateImageURL(url),
                 decoration: InputDecoration(
                   labelText: "Image URL",
+                  errorText: imageUrlError,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
@@ -289,8 +329,16 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                         content: Text("Pledged gifts cannot be modified."),
                       ),
                     );
-                  } else {
-                    print("is it pledgeddD?? $isPledged");
+                  }
+                  else if (nameError !=null  ||  giftNameController.text.isEmpty || priceController.text.isEmpty || descriptionController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(nameError ?? 'Please fill in all fields'),
+                        backgroundColor: Colors.red, // Set the background color to red for errors
+                      ),
+                    );
+                  }
+                  else {
                     Navigator.pop(context, {
                       'giftid': widget.giftDetails['giftid'],
                       'giftName': giftNameController.text.isNotEmpty
@@ -308,7 +356,9 @@ class _GiftDetailsPageState extends State<GiftDetailsPage> {
                 },
 
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple,
+                  backgroundColor: (nameError == null && priceController.text.isNotEmpty && descriptionController.text.isNotEmpty)
+                          ? Colors.deepPurple
+                          : Colors.grey, // Greyed out color when disabled
                   padding: EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

@@ -112,7 +112,7 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
                       Text(
                         widget.name,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
@@ -161,7 +161,7 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(25),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                   ),
                   child: Text(
                     (widget.status==1 || widget.status== true) ? 'Pledged' : 'Pledge',

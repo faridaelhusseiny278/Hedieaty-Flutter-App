@@ -19,10 +19,16 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController addressController;
   late List<Map<String, dynamic>> events;
 
+  String? nameError;
+  String? emailError;
+  String? phoneError;
+  String? addressError;
+
   late bool pushNotification;
   late bool emailNotification;
   late bool smsNotification ;
   bool isLoading = true;
+  var imageurl;
 
   @override
   void initState() {
@@ -49,6 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
         isLoading = false;
         this.user = Map<String, dynamic>.from(rawUser!);
         this.events = events;
+        imageurl = rawUser['imageurl'];
         nameController = TextEditingController(text: user['name']);
         emailController = TextEditingController(text: user['email']);
         phoneController = TextEditingController(text: user['phonenumber']);
@@ -81,6 +88,70 @@ class _ProfilePageState extends State<ProfilePage> {
     phoneController.dispose();
     addressController.dispose();
     super.dispose();
+  }
+
+  void _validateName(String name) {
+    setState(() {
+      if (name.isEmpty) {
+        nameError = 'Name cannot be empty';
+      } else if (!RegExp(r"^[a-zA-Z\s]{3,50}$").hasMatch(name)) {
+        nameError = 'Enter a valid name (3-50 alphabetic characters)';
+      } else {
+        nameError = null;
+      }
+    });
+  }
+
+  Future<void> _validateEmail(String email) async {
+    DatabaseService dbService = DatabaseService();
+    setState(() {
+      emailError = null; // Reset error
+    });
+    if (email.isEmpty) {
+      setState(() {
+        emailError = 'Email cannot be empty';
+      });
+    } else if (!RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").hasMatch(email)) {
+      setState(() {
+        emailError = 'Enter a valid email address';
+      });
+    } else if (await dbService.checkEmail(email, widget.userid)) {
+      setState(() {
+        emailError = 'Email already exists';
+      });
+    }
+  }
+
+  Future<void> _validatePhoneNumber(String phoneNumber) async {
+    DatabaseService dbService = DatabaseService();
+    setState(() {
+      phoneError = null; // Reset error
+    });
+    if (phoneNumber.isEmpty) {
+      setState(() {
+        phoneError = 'Phone number cannot be empty';
+      });
+    } else if (!RegExp(r"^\+\d{10,15}$").hasMatch(phoneNumber)) {
+      setState(() {
+        phoneError = 'Enter a valid phone number starting with + and has 10-15 digits';
+      });
+    } else if (await dbService.checkPhoneNumber(phoneNumber, widget.userid)) {
+      setState(() {
+        phoneError = 'Phone number already exists';
+      });
+    }
+  }
+
+  void _validateAddress(String address) {
+    setState(() {
+      if (address.isEmpty) {
+        addressError = 'Address cannot be empty';
+      } else if (!RegExp(r"^[a-zA-Z0-9\s,.-]{5,100}$").hasMatch(address)) {
+        addressError = 'Enter a valid address (5-100 characters, no special characters)';
+      } else {
+        addressError = null;
+      }
+    });
   }
 
   @override
@@ -121,7 +192,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   CircleAvatar(
                     radius: 50,
                     backgroundImage:
-                    AssetImage('assets/istockphoto-1296058958-612x612.jpg'),
+                    AssetImage(imageurl),
                   ),
                   SizedBox(height: 10),
                   Text(
@@ -151,19 +222,35 @@ class _ProfilePageState extends State<ProfilePage> {
                   children: [
                     TextField(
                       controller: nameController,
-                      decoration: InputDecoration(labelText: 'Name'),
+                      decoration: InputDecoration(
+                        labelText: 'Name',
+                        errorText: nameError,
+                      ),
+                      onChanged: (value) => _validateName(value),
                     ),
                     TextField(
                       controller: emailController,
-                      decoration: InputDecoration(labelText: 'Email'),
+                      decoration: InputDecoration(
+                        labelText: 'Email',
+                        errorText: emailError,
+                      ),
+                      onChanged: (value) => _validateEmail(value),
                     ),
                     TextField(
                       controller: phoneController,
-                      decoration: InputDecoration(labelText: 'Phone Number'),
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        errorText: phoneError,
+                      ),
+                      onChanged: (value) => _validatePhoneNumber(value),
                     ),
                     TextField(
                       controller: addressController,
-                      decoration: InputDecoration(labelText: 'Address'),
+                      decoration: InputDecoration(
+                        labelText: 'Address',
+                        errorText: addressError,
+                      ),
+                      onChanged: (value) => _validateAddress(value),
                     ),
                   ],
                 ),
@@ -248,10 +335,41 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _saveProfile,
+        onPressed: () {
+          if (nameError != null || emailError != null || phoneError != null || addressError != null) {
+            // Show SnackBar with specific error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(nameError ?? emailError ?? phoneError ?? addressError ?? 'Please fix the errors'),
+                backgroundColor: Colors.red, // Red for error messages
+              ),
+            );
+          } else if (nameController.text.isEmpty || emailController.text.isEmpty || phoneController.text.isEmpty || addressController.text.isEmpty) {
+            // Show SnackBar if any fields are empty
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Please fill in all fields'),
+                backgroundColor: Colors.orange, // Orange for missing fields
+              ),
+            );
+          } else {
+            // If there are no errors and all fields are filled, save the profile
+            _saveProfile();
+          }
+        },
         child: Icon(Icons.save),
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: (nameError == null &&
+            emailError == null &&
+            phoneError == null &&
+            addressError == null &&
+            nameController.text.isNotEmpty &&
+            emailController.text.isNotEmpty &&
+            phoneController.text.isNotEmpty &&
+            addressController.text.isNotEmpty)
+            ? Colors.green
+            : Colors.grey, // Green if everything is valid, grey if disabled
       ),
+
     );
   }
 

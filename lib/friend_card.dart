@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 
 class FriendCard extends StatelessWidget {
+  final String imageurl;
   final String name;
   final int eventCount;
   final VoidCallback onTap;  // Add onTap parameter
 
   // Modify the constructor to accept the onTap callback
-  FriendCard({required this.name, required this.eventCount, required this.onTap});
+  FriendCard({ required this.imageurl, required this.name, required this.eventCount, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -19,9 +20,16 @@ class FriendCard extends StatelessWidget {
       ),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: Color(0xFFE0E5EC),
-          child: Icon(Icons.person, color: Color(0xFF666680)),
+          radius: 32.0,
+          backgroundImage: imageurl.isNotEmpty
+              ? AssetImage(imageurl) // Use FileImage for local image files
+              : null,
+          backgroundColor: Colors.grey.shade200,
+          child: imageurl.isEmpty
+              ? Icon(Icons.person, color: Colors.grey.shade600)
+              : null,
         ),
+
         title: Text(
           name,
           style: TextStyle(

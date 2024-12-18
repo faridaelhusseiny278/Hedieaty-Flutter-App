@@ -19,6 +19,94 @@ class _SignupScreenState extends State<SignupScreen> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
+  String? emailError;
+  String? phoneError;
+  String? nameError;
+  String? addressError;
+  String? passwordError;
+
+  void _validateName(String name) {
+    setState(() {
+      if (name.isEmpty) {
+        nameError = 'Name cannot be empty';
+      } else if (!RegExp(r"^[a-zA-Z\s]{3,50}$").hasMatch(name)) {
+        nameError = 'Enter a valid name (3-50 alphabetic characters)';
+      } else {
+        nameError = null;
+      }
+    });
+  }
+  void _validateAddress(String address) {
+    setState(() {
+      if (address.isEmpty) {
+        addressError = 'Address cannot be empty';
+      } else if (!RegExp(r"^[a-zA-Z0-9\s,.-]{5,100}$").hasMatch(address)) {
+        addressError = 'Enter a valid address (5-100 characters, no special characters)';
+      } else {
+        addressError = null;
+      }
+    });
+  }
+
+
+
+  Future<void> _validateEmail(String email) async {
+    DatabaseService dbService = DatabaseService();
+    setState(() {
+      emailError = null; // Reset error
+    });
+    if (email.isEmpty) {
+      setState(() {
+        emailError = 'Email cannot be empty';
+      });
+    } else if (!RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").hasMatch(email)) {
+      setState(() {
+        emailError = 'Enter a valid email address';
+      });
+    } else if (await dbService.checkEmail(email,null)) {
+      setState(() {
+        emailError = 'Email already exists';
+      });
+    }
+  }
+  Future<void> _validatePhoneNumber(String phoneNumber) async {
+    DatabaseService dbService = DatabaseService();
+    setState(() {
+      phoneError = null; // Reset error
+    });
+    if (phoneNumber.isEmpty) {
+      setState(() {
+        phoneError = 'Phone number cannot be empty';
+      });
+    } else if (!RegExp(r"^\+\d{10,15}$").hasMatch(phoneNumber)) {
+      setState(() {
+        phoneError = 'Enter a valid phone number starting with + and has 10-15 digits';
+      });
+    } else if (await dbService.checkPhoneNumber(phoneNumber,null)) {
+      setState(() {
+        phoneError = 'Phone number already exists';
+      });
+    }
+  }
+  // validate password
+  void _validatePassword(String password) {
+    setState(() {
+      if (password.isEmpty) {
+        setState(() {
+          passwordError = 'Password cannot be empty';
+        });
+      } else if (password.length < 8) {
+        setState(() {
+          passwordError = 'Password must be at least 8 characters';
+        });
+      } else {
+        setState(() {
+          passwordError = null;
+        });
+      }
+    });
+  }
+
   Future<int> _getNewUserId() async {
     DataSnapshot snapshot = await _dbRef.get();
     if (snapshot.value != null) {
@@ -102,8 +190,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 20),
                       TextField(
                         controller: _nameController,
+                        onChanged: (name) => _validateName(name),
                         decoration: InputDecoration(
                           labelText: "Name",
+                          errorText: nameError,
                           prefixIcon: const Icon(Icons.person),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -113,8 +203,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _phoneController,
+                        onChanged: (phone) => _validatePhoneNumber(phone),
                         decoration: InputDecoration(
                           labelText: "Phone Number",
+                          errorText: phoneError,
                           prefixIcon: const Icon(Icons.phone),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -124,8 +216,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _addressController,
+                        onChanged: (address) => _validateAddress(address),
                         decoration: InputDecoration(
                           labelText: "Address",
+                          errorText: addressError,
                           prefixIcon: const Icon(Icons.home),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -135,8 +229,10 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _emailController,
+                        onChanged: (email) => _validateEmail(email),
                         decoration: InputDecoration(
                           labelText: "Email",
+                          errorText: emailError,
                           prefixIcon: const Icon(Icons.email),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -146,9 +242,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _passwordController,
+                        onChanged: (password) => _validatePassword(password),
                         obscureText: true,
                         decoration: InputDecoration(
                           labelText: "Password",
+                          errorText: passwordError,
                           prefixIcon: const Icon(Icons.lock),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
@@ -164,7 +262,72 @@ class _SignupScreenState extends State<SignupScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        onPressed: _signup,
+                        onPressed: () {
+                          if (nameError == null &&
+                              emailError == null &&
+                              phoneError == null &&
+                              addressError == null && passwordError == null&&
+                              _nameController.text.isNotEmpty && _phoneController.text.isNotEmpty && _addressController.text.isNotEmpty && _emailController.text.isNotEmpty && _passwordController.text.isNotEmpty) {
+                            _signup();
+                          }
+                          else if (_nameController.text.isEmpty) {
+                            setState(() {
+                              nameError = 'Name cannot be empty';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please fill all the fields"),
+                                ),
+                              );
+                            });
+                          }
+                          else if (_phoneController.text.isEmpty) {
+                            setState(() {
+                              phoneError = 'Phone number cannot be empty';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please fill all the fields"),
+                                ),
+                              );
+                            });
+                          }
+                          else if (_addressController.text.isEmpty) {
+                            setState(() {
+                              addressError = 'Address cannot be empty';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please fill all the fields"),
+                                ),
+                              );
+                            });
+                          }
+                          else if (_emailController.text.isEmpty) {
+                            setState(() {
+                              emailError = 'Email cannot be empty';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please fill all the fields"),
+                                ),
+                              );
+                            });
+                          }
+                          else if (_passwordController.text.isEmpty) {
+                            setState(() {
+                              passwordError = 'Password cannot be empty';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please fill all the fields"),
+                                ),
+                              );
+                            });
+                          }
+                            else if (nameError != null || emailError != null || phoneError != null || addressError != null || passwordError != null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("Please fix the errors"),
+                                ),
+                              );
+                            }
+                          },
                         child: const Text(
                           "Sign Up",
                           style: TextStyle(fontSize: 16),

@@ -1,12 +1,13 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'Notification.dart';
+import 'firebasedatabase_helper.dart';
 
 class AppNotificationService {
   final int userid;
-  late final DatabaseReference _dbRef;
+  late final _dbRef;
 
   AppNotificationService({required this.userid}) {
-    _dbRef = FirebaseDatabase.instance.ref("Users/$userid/notifications");
+    _dbRef = FirebaseDatabaseHelper.getReference("Users/$userid/notifications");
   }
 
   // Add a new notification to Firebase
@@ -15,6 +16,7 @@ class AppNotificationService {
       'message': notification.message,
       'timestamp': notification.timestamp.toIso8601String(),
       'isRead': notification.isRead,
+      'isSent': notification.isSent ,
     });
   }
 
@@ -29,6 +31,7 @@ class AppNotificationService {
           message: value['message'],
           timestamp: DateTime.parse(value['timestamp']),
           isRead: value['isRead'],
+          isSent: value['isSent'],
         ));
       });
       return notifications;
@@ -48,7 +51,19 @@ class AppNotificationService {
       });
     }
   }
-
+  Future<void> markNotificationAsSent(AppNotification notification) async {
+    final snapshot = await _dbRef.get();
+    if (snapshot.exists) {
+      print("now in markNotificationAsSent");
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      data.forEach((key, value) {
+        if (value['message'] == notification.message) {
+          _dbRef.child(key).update({'isSent': true});
+          print("notification sent");
+        }
+      });
+    }
+  }
   // Clear all notifications (or only unread ones)
   Future<void> clearNotifications() async {
     await _dbRef.remove();

@@ -7,6 +7,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'firebasedatabase_helper.dart';
 
 
 class DatabaseService {
@@ -118,7 +119,7 @@ class DatabaseService {
 
   Future <void> FetchDataFromFirebase(Database myData) async
   {
-    final DatabaseReference dbRef = FirebaseDatabase.instance.ref(
+    final dbRef =FirebaseDatabaseHelper.getReference(
         "Users");
     final DataSnapshot snapshot = await dbRef.get();
     if (snapshot.value is List) {
@@ -212,7 +213,64 @@ class DatabaseService {
     }
   }
 
-
+  // check if phone number exists in firebase
+  Future <bool> checkPhoneNumber(String phonenumber, int? userid) async {
+    final dbRef = FirebaseDatabaseHelper.getReference("Users");
+    final DataSnapshot snapshot = await dbRef.get();
+    if (snapshot.exists) {
+      if (snapshot.value is List) {
+        final usersList = snapshot.value as List;
+        for (var user in usersList) {
+          if (user == null) {
+            continue;
+          }
+          if (userid != null) {
+            if (user['phonenumber'] == phonenumber && user['userid'] != userid) {
+              return true;
+            }
+          }
+          else {
+            if (user['phonenumber'] == phonenumber) {
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+    } else {
+      return false;
+    }
+    return false;
+  }
+  // check if email already exists in firebase
+  Future <bool> checkEmail(String email, int? userid) async {
+    final dbRef = FirebaseDatabaseHelper.getReference("Users");
+    final DataSnapshot snapshot = await dbRef.get();
+    if (snapshot.exists) {
+      if (snapshot.value is List) {
+        final usersList = snapshot.value as List;
+        for (var user in usersList) {
+          if (user == null) {
+            continue;
+          }
+          if (userid != null) {
+            if (user['email'] == email && user['userid'] != userid) {
+              return true;
+                 }
+          else {
+            if (user['email'] == email) {
+              return true;
+            }
+          }
+          }
+        }
+        return false;
+      }
+    } else {
+      return false;
+    }
+    return false;
+  }
 
   // query table pledges to get the user id who pledged each gift which is an int
   Future <int> getPledges(int giftid) async {
@@ -225,7 +283,7 @@ class DatabaseService {
     return result;
   }
   Future<int> getPledgesFromFirebase(int giftid) async {
-    final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
+    final dbRef = FirebaseDatabaseHelper.getReference("Users");
     final DataSnapshot snapshot = await dbRef.get();
 
     if (snapshot.exists) {
@@ -302,7 +360,7 @@ class DatabaseService {
     //   3- compare the 2 lists
     //   4- if the lists are not the same print the differences
     //   5- if the lists are the same print "the data is the same"
-    final DatabaseReference dbRef = FirebaseDatabase.instance.ref(
+    final dbRef = FirebaseDatabaseHelper.getReference(
         "Users/$userid");
     final DataSnapshot snapshot = await dbRef.get();
     Database myData = await db;
@@ -551,7 +609,7 @@ class DatabaseService {
 
   Future<Map<String, dynamic>?> getUserByIdforFriends(int userId) async {
     // Reference to the database for the specific user
-    final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId");
+    final dbRef = FirebaseDatabaseHelper.getReference("Users/$userId");
 
     try {
       // Fetch the snapshot for the user's data
@@ -594,7 +652,7 @@ class DatabaseService {
 
   Future<void> addEventForUserinFirebase(Event event, int userId, EventId) async {
     try {
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final dbRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
 
       // get the ids of all the events in this user node and set the new event with the highest id+1
       // but first check if event is list , if so set the id to the length +1
@@ -636,7 +694,7 @@ class DatabaseService {
   // check if event exists in firebase given an event id and user id
   Future<bool> doesEventExistInFirebase(int eventId,int userId) async {
     try {
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final dbRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
 
       if (snapshot.exists) {
@@ -682,7 +740,7 @@ class DatabaseService {
   }
   Future<void> addGiftForUserinFirebase(Map<String, dynamic> gift, int userId, int giftId) async {
     try {
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final dbRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
 
       int giftId_for_firebase = 0;
@@ -773,7 +831,7 @@ class DatabaseService {
   Future<bool> areFriends(int currentUserId, int friendId) async {
     try {
       // Reference to the current user's "friends" node
-      final DatabaseReference friendsRef = FirebaseDatabase.instance.ref("Users/${currentUserId}/friends");
+      final friendsRef = FirebaseDatabaseHelper.getReference("Users/${currentUserId}/friends");
 
       // Fetch the snapshot of the friends list
       final DataSnapshot snapshot = await friendsRef.get();
@@ -827,7 +885,7 @@ class DatabaseService {
 
   Future<void> updateEventForUserinFirebase(Event event, int userId) async {
     try {
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final dbRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
 
       if (snapshot.exists) {
@@ -936,7 +994,7 @@ class DatabaseService {
   }
   Future<void> updateGiftForUserinFirebase(Map<String, dynamic> gift, int giftid, int userId) async {
     try {
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final dbRef =FirebaseDatabaseHelper.getReference("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
 
       if (snapshot.exists) {
@@ -1065,7 +1123,7 @@ class DatabaseService {
 
   Future<List<int>> getUserFriendsIDs(int userId) async {
     // Reference to the database
-    final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/friends");
+    final dbRef = FirebaseDatabaseHelper.getReference("Users/$userId/friends");
     print("i'm hereee");
 
     try {
@@ -1104,7 +1162,7 @@ class DatabaseService {
   Future<List<Map<String, dynamic>>> getGiftsForEventFriends(int eventId, int userId) async {
     try {
       // Reference to the user's events node
-      final DatabaseReference eventsRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final eventsRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
 
       // Fetch the snapshot of the events node
       final DataSnapshot snapshot = await eventsRef.get();
@@ -1213,7 +1271,7 @@ class DatabaseService {
   Future<Map<String, dynamic>?> getUserByPhoneNumber(String phoneNumber) async {
     try {
       // Reference to the database
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
+      final dbRef = FirebaseDatabaseHelper.getReference("Users");
 
       // Fetch the snapshot of the users node
       final DataSnapshot snapshot = await dbRef.get();
@@ -1268,10 +1326,10 @@ class DatabaseService {
     try {
       await addFriendinDatabase(userId, friendId);
       // Reference to the current user's friends node
-      final DatabaseReference userFriendsRef = FirebaseDatabase.instance.ref("Users/$userId/friends");
+      final userFriendsRef = FirebaseDatabaseHelper.getReference("Users/$userId/friends");
 
       // Reference to the friend's friends node
-      final DatabaseReference friendFriendsRef = FirebaseDatabase.instance.ref("Users/$friendId/friends");
+      final friendFriendsRef = FirebaseDatabaseHelper.getReference("Users/$friendId/friends");
       int current_user_friendId_in_firebase = 0;
       int friend_friendId_in_firebase = 0;
 
@@ -1337,7 +1395,7 @@ class DatabaseService {
   Future<int> getEventCountForUserFriends(String userId) async {
     try {
       // Reference to the user's events node
-      final DatabaseReference eventsRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final eventsRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
 
       // Fetch the snapshot of the events
       final DataSnapshot snapshot = await eventsRef.get();
@@ -1388,7 +1446,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   Future <int> getWhoHasPledgedGiftfromFirebase(int userId, int giftId) async {
     try{
 
-     final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
+     final dbRef = FirebaseDatabaseHelper.getReference("Users");
      final DataSnapshot snapshot = await dbRef.get();
      print("snapshot value in getWhoHasPledgedGiftfromFirebase is ${snapshot.value}");
      final usersList = snapshot.value as List;
@@ -1456,7 +1514,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   Future<void> deleteEventsForUserinFirebase(int userId, List<Event> eventsToDelete) async {
     try {
       await deletePldegedGiftsForUser(userId, eventsToDelete);
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final dbRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
 
       if (snapshot.exists) {
@@ -1562,7 +1620,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   }
   Future<void> deleteGiftsForUserinFirebase(int giftId, int userId, int eventId) async {
     try {
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final dbRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
       final DataSnapshot snapshot = await dbRef.get();
 
       if (snapshot.exists) {
@@ -1677,7 +1735,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   Future<List<friendEvent>> getAllEventsForUserFriends(int userId) async{
     try{
       // Reference to the user's events node
-      final DatabaseReference eventsRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final eventsRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
 
       // Fetch the snapshot of the events node
       final DataSnapshot snapshot = await eventsRef.get();
@@ -1774,7 +1832,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   Future<List<Map<String, dynamic>>> getEventsForUserFriends(int userId) async {
     try {
       // Reference to the user's events node
-      final DatabaseReference eventsRef = FirebaseDatabase.instance.ref("Users/$userId/events");
+      final eventsRef = FirebaseDatabaseHelper.getReference("Users/$userId/events");
 
       // Fetch the snapshot of the events node
       final DataSnapshot snapshot = await eventsRef.get();
@@ -1857,7 +1915,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   // get user id by email
   Future<int> getUserIdByEmailFromFirebase(String email) async {
     try {
-      final DatabaseReference dbRef = FirebaseDatabase.instance.ref("Users");
+      final dbRef = FirebaseDatabaseHelper.getReference("Users");
 
       // Fetch the snapshot of the users node
       final DataSnapshot snapshot = await dbRef.get();
@@ -1932,7 +1990,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   Future<List<Map<String, dynamic>>> getPledgedGiftsWithDetailsfromfirebase(int userId) async {
     try {
       // Reference to the user's pledged gifts node
-      final DatabaseReference pledgedGiftsRef = FirebaseDatabase.instance.ref("Users/$userId/pledgedgifts");
+      final pledgedGiftsRef = FirebaseDatabaseHelper.getReference("Users/$userId/pledgedgifts");
 
       // Fetch the snapshot of the pledged gifts
       final DataSnapshot pledgedGiftsSnapshot = await pledgedGiftsRef.get();
@@ -1951,7 +2009,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
             print("friendGifts are $friendGifts");
 
             // Fetch friend details
-            final DatabaseReference friendRef = FirebaseDatabase.instance.ref("Users/$friendId");
+            final friendRef = FirebaseDatabaseHelper.getReference("Users/$friendId");
             final DataSnapshot friendSnapshot = await friendRef.get();
 
             if (friendSnapshot.exists && friendSnapshot.value is Map) {
@@ -1962,7 +2020,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
               final int friendId = friendData["userid"];
 
               // Fetch friend's events
-              final DatabaseReference eventsRef = friendRef.child("events");
+              final eventsRef = friendRef.child("events");
               final DataSnapshot eventsSnapshot = await eventsRef.get();
 
               if (eventsSnapshot.exists && eventsSnapshot.value is List) {
@@ -2020,7 +2078,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
             final friendIdIndex = pledgedGiftsList.indexOf(giftIds);
 
             // Fetch friend details
-            final DatabaseReference friendRef = FirebaseDatabase.instance.ref("Users/$friendIdIndex");
+            final  friendRef = FirebaseDatabaseHelper.getReference("Users/$friendIdIndex");
             final DataSnapshot friendSnapshot = await friendRef.get();
 
             if (friendSnapshot.exists && friendSnapshot.value is Map) {
@@ -2031,7 +2089,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
               final int friendId = friendData["userid"];
 
               // Fetch friend's events
-              final DatabaseReference eventsRef = friendRef.child("events");
+              final  eventsRef = friendRef.child("events");
               final DataSnapshot eventsSnapshot = await eventsRef.get();
 
               if (eventsSnapshot.exists && eventsSnapshot.value is List) {
@@ -2107,8 +2165,8 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
   Future<bool> hasPledgedGift(int userId, int giftId) async {
     try {
       // Reference to the user's pledged gifts node
-      final DatabaseReference pledgedGiftsRef =
-      FirebaseDatabase.instance.ref("Users/$userId/pledgedgifts");
+      final  pledgedGiftsRef =
+          FirebaseDatabaseHelper.getReference("Users/$userId/pledgedgifts");
 
       // Fetch the snapshot of the pledged gifts
       final DataSnapshot snapshot = await pledgedGiftsRef.get();
@@ -2187,7 +2245,7 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
     await updateGiftStatusindatabase(giftId, status, userId, friendId);
 
     // Reference to the friend's events node
-    final DatabaseReference friendEventsRef = FirebaseDatabase.instance.ref("Users/$friendId/events");
+    final friendEventsRef = FirebaseDatabaseHelper.getReference("Users/$friendId/events");
 
     // Fetch the snapshot of the friend's events
     final DataSnapshot eventsSnapshot = await friendEventsRef.get();
@@ -2227,9 +2285,30 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
                   await friendEventsRef
                       .child("$eventIndex/gifts/$giftIndex/pledged")
                       .set(status);
+                  if (status == false){
+                  // set the notification to false
+                    await friendEventsRef
+                        .child("$eventIndex/gifts/$giftIndex/notificationSent")
+                        .set(false);
+
+                  //   also remove the notification which has the gift name in its message
+                    final notificationsRef = FirebaseDatabaseHelper.getReference("Users/$friendId/notifications");
+                    final DataSnapshot notificationsSnapshot = await notificationsRef.get();
+                    if (notificationsSnapshot.exists) {
+                      if (notificationsSnapshot.value is Map) {
+                        final notificationsMap = notificationsSnapshot.value as Map;
+                        for (var notificationKey in notificationsMap.keys) {
+                          final notificationData = notificationsMap[notificationKey];
+                          if (notificationData is Map && (notificationData['message'].contains(giftData['giftName']) && notificationData['message'].contains(eventData['eventName']))) {
+                            await notificationsRef.child(notificationKey).remove();
+                          }
+                        }
+                      }
+                    }
+                  }
 
                   // Reference to the pledged gifts for the user
-                  final DatabaseReference pledgedGiftsRef = FirebaseDatabase.instance.ref("Users/$userId/pledgedgifts");
+                  final pledgedGiftsRef = FirebaseDatabaseHelper.getReference("Users/$userId/pledgedgifts");
 
                   // Fetch the pledged gifts for the user
                   final DataSnapshot pledgedGiftsSnapshot = await pledgedGiftsRef.get();
@@ -2274,7 +2353,9 @@ Future <void> deletePldegedGiftsForUser(int userId, List<Event> eventsToDelete) 
                       } else {
                         print("Friend ID index out of bounds.");
                       }
+
                     }
+
 
                     print("Gift status updated successfully.");
                     return; // Exit once the status is updated
@@ -2376,7 +2457,7 @@ try{
     userData["notification_preferences"] = (userData["notification_preferences"] as String).split(",");
   }
   // Reference to the user's node
-  final DatabaseReference userRef = FirebaseDatabase.instance.ref("Users/$userId");
+  final userRef =FirebaseDatabaseHelper.getReference("Users/$userId");
 
   // Update the user data
   await userRef.update(userData);

@@ -8,6 +8,15 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
+class EventStatus {
+  final IconData icon;
+  final Color color;
+
+  EventStatus(this.icon, this.color);
+
+
+}
+
 class EventListPage extends StatefulWidget {
   final int userid;
   DatabaseService db = DatabaseService();
@@ -124,61 +133,68 @@ class _CalendarPageState extends State<EventListPage> {
   }
 
   void _addOrEditEvent({Event? event}) async {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final modalHeight = screenHeight - keyboardHeight;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => EventForm(
-        event: event,
-        onSave: (newEvent) async {
-          // Perform asynchronous work outside of setState
-          if (event == null) {
-            // Adding a new event
-            int eventId = await widget.db.addEventForUser(widget.userid, newEvent);
-            if (eventId > 0) {
-              // Set the generated ID from the database
-              newEvent.id = eventId;
+
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.9,
+        child: EventForm(
+          event: event,
+          onSave: (newEvent) async {
+            // Perform asynchronous work outside of setState
+            if (event == null) {
+              // Adding a new event
+              int eventId = await widget.db.addEventForUser(widget.userid, newEvent);
+              if (eventId > 0) {
+                // Set the generated ID from the database
+                newEvent.id = eventId;
+                actions.add({
+                  'action': 'add',
+                  'event': newEvent.toJson()
+                });
+                // call save actions
+                saveActions(actions);
+
+                // Update the local list
+                setState(() {
+                  events.add(newEvent);
+                });
+              } else {
+                print("Error adding event to the database.");
+              }
+            }
+            else {
+              // Modifying an existing event
+              int index = events.indexOf(event);
+              events[index] = newEvent;
               actions.add({
-                'action': 'add',
-                'event': newEvent.toJson()
+                'action': 'update',
+                'oldEvent': event.toJson(),
+                'newEvent': newEvent.toJson()
               });
               // call save actions
               saveActions(actions);
 
-              // Update the local list
+
+              // Update the event in the database
+              await widget.db.updateEventForUser(widget.userid, newEvent);
+
+                print("Event updated successfully.");
+
+              // Update the local list synchronously after the operation is complete
               setState(() {
-                events.add(newEvent);
+                events[index] = newEvent;
               });
-            } else {
-              print("Error adding event to the database.");
             }
-          }
-          else {
-            // Modifying an existing event
-            int index = events.indexOf(event);
-            events[index] = newEvent;
-            actions.add({
-              'action': 'update',
-              'oldEvent': event.toJson(),
-              'newEvent': newEvent.toJson()
-            });
-            // call save actions
-            saveActions(actions);
 
-
-            // Update the event in the database
-            await widget.db.updateEventForUser(widget.userid, newEvent);
-
-              print("Event updated successfully.");
-
-            // Update the local list synchronously after the operation is complete
-            setState(() {
-              events[index] = newEvent;
-            });
-          }
-
-          // Close the modal bottom sheet
-          Navigator.pop(context);
-        },
+            // Close the modal bottom sheet
+            Navigator.pop(context);
+          },
+        ),
       ),
     );
   }
@@ -322,52 +338,31 @@ class _CalendarPageState extends State<EventListPage> {
     bool isSelected = selectedEvents.contains(event);
 
     // Determine the icon based on the event status
-    IconData statusIcon;
-    Color statusColor;
-
-    switch (event.status.toLowerCase()) {
-      case 'upcoming':
-        statusIcon = Icons.access_time;  // Clock icon for upcoming events
-        statusColor = Colors.orange;     // Orange color for upcoming
-        break;
-      case 'current':
-        statusIcon = Icons.check_circle; // Check circle icon for current events
-        statusColor = Colors.green;      // Green color for current
-        break;
-      case 'past':
-        statusIcon = Icons.history;     // History icon for past events
-        statusColor = Colors.grey;       // Grey color for past
-        break;
-      default:
-        statusIcon = Icons.help_outline; // Default icon if status is unknown
-        statusColor = Colors.blueGrey;
-    }
+    final eventStatus = _getEventStatus(event.status);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       color: Colors.deepPurple[100],
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.0),  // Softer, more rounded corners
+        borderRadius: BorderRadius.circular(20.0),
       ),
       elevation: 6,
-      shadowColor: Colors.black.withOpacity(0.1),  // Subtle shadow
+      shadowColor: Colors.black.withOpacity(0.1),
       child: InkWell(
         onTap: () {
           _toggleEventSelection(event);
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => GiftListPage(eventid: event.id!,
-                  userid: widget.userid),
+              builder: (context) => GiftListPage(eventid: event.id!, userid: widget.userid),
             ),
           );
         },
         child: Padding(
-          padding: const EdgeInsets.all(18.0),  // More padding for spacious look
+          padding: const EdgeInsets.all(18.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Checkbox on the left for selection
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
@@ -378,17 +373,15 @@ class _CalendarPageState extends State<EventListPage> {
                   ),
                 ],
               ),
-              // Event name with bigger font size and bold style
               Text(
                 event.name,
                 style: TextStyle(
-                  fontWeight: FontWeight.w700, // Bold weight for name
-                  fontSize: 20, // Larger font size
+                  fontWeight: FontWeight.w700,
+                  fontSize: 20,
                   color: Colors.black,
                 ),
               ),
-              SizedBox(height: 12), // Space between name and other info
-              // Category and status with smaller font size and color for subtlety
+              SizedBox(height: 12),
               Row(
                 children: [
                   Icon(Icons.category, color: Colors.deepPurple, size: 18),
@@ -400,8 +393,8 @@ class _CalendarPageState extends State<EventListPage> {
                       color: Colors.grey[700],
                     ),
                   ),
-                  SizedBox(width: 20), // Space between category and status
-                  Icon(statusIcon, color: statusColor, size: 18), // Dynamic status icon
+                  SizedBox(width: 20),
+                  Icon(eventStatus.icon, color: eventStatus.color, size: 18),
                   SizedBox(width: 8),
                   Text(
                     event.status,
@@ -412,39 +405,45 @@ class _CalendarPageState extends State<EventListPage> {
                   ),
                 ],
               ),
-              SizedBox(height: 12), // Space between category/status and location/date
-              // Location and date
+              SizedBox(height: 12),
               Row(
                 children: [
                   Icon(Icons.location_on, color: Colors.blueAccent, size: 18),
                   SizedBox(width: 8),
-                  Text(
-                    event.location,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                  // Use Expanded or Flexible here
+                  Expanded(
+                    child: Text(
+                      event.location,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                      overflow: TextOverflow.ellipsis, // Prevent text overflow
                     ),
                   ),
-                  SizedBox(width: 20), // Space between location and date
+                  SizedBox(width: 20),
                   Icon(Icons.calendar_today, color: Colors.orange, size: 18),
                   SizedBox(width: 8),
-                  Text(
-                    DateFormat.yMMMd().format(event.date), // Formatted date
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
+                  // Use Expanded or Flexible here as well
+                  Expanded(
+                    child: Text(
+                      DateFormat.yMMMd().format(event.date),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                      overflow: TextOverflow.ellipsis, // Prevent text overflow
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: 12), // Space between info and action buttons
-              // Action Buttons
+              SizedBox(height: 12),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     icon: Icon(Icons.edit, color: Colors.deepPurple),
-                    onPressed: () => _addOrEditEvent(event: event), // Pass the selected event
+                    onPressed: () => _addOrEditEvent(event: event),
                   ),
                   Icon(
                     Icons.arrow_forward_ios,
@@ -459,6 +458,22 @@ class _CalendarPageState extends State<EventListPage> {
       ),
     );
   }
+
+// Helper function for determining event status
+  EventStatus _getEventStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'upcoming':
+        return EventStatus(Icons.access_time, Colors.orange);
+      case 'current':
+        return EventStatus(Icons.check_circle, Colors.green);
+      case 'past':
+        return EventStatus(Icons.history, Colors.grey);
+      default:
+        return EventStatus(Icons.help_outline, Colors.blueGrey);
+    }
+  }
+
+
 
 
 
@@ -544,147 +559,258 @@ class EventForm extends StatefulWidget {
 class _EventFormState extends State<EventForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _categoryController = TextEditingController();
   final _statusController = TextEditingController();
   final _locationController = TextEditingController();
   DateTime? _selectedDate;
+  String? nameError;
+  String? locationError;
+  String? _selectedCategory; // To store the selected category
+  bool isFormValid = false;
+
+  // Validate the form and update the state
+  void _validateForm() {
+    setState(() {
+      nameError = _nameController.text.isEmpty
+          ? 'Event name cannot be empty'
+          : !RegExp(r"^[a-zA-Z\s]{3,50}$").hasMatch(_nameController.text)
+          ? 'Enter a valid name (3-50 alphabetic characters)'
+          : null;
+
+      locationError = _locationController.text.isEmpty
+          ? 'Event location cannot be empty'
+          : !RegExp(r"^[a-zA-Z0-9\s]{3,50}$").hasMatch(_locationController.text)
+          ? 'Enter a valid location (3-50 alphanumeric characters)'
+          : null;
+
+      isFormValid = nameError == null &&
+          locationError == null &&
+          _selectedDate != null &&
+          _statusController.text.isNotEmpty &&
+          _selectedCategory != null &&
+          _nameController.text.isNotEmpty &&
+          _locationController.text.isNotEmpty;
+    });
+  }
+  // Validate event name
+  void _validateName(String name) {
+    setState(() {
+      if (name.isEmpty) {
+        nameError = 'Name cannot be empty';
+      } else if (!RegExp(r"^[a-zA-Z\s]{3,50}$").hasMatch(name)) {
+        nameError = 'Enter a valid name (3-50 alphabetic characters)';
+      } else {
+        nameError = null;
+      }
+    });
+  }
+
+  // Validate event location
+  void _validateLocation(String location) {
+    setState(() {
+      if (location.isEmpty) {
+        locationError = 'Location cannot be empty';
+      } else if (!RegExp(r"^[a-zA-Z0-9\s]{3,50}$").hasMatch(location)) {
+        locationError = 'Enter a valid location (3-50 alphanumeric characters)';
+      } else {
+        locationError = null;
+      }
+    });
+  }
 
   @override
   void initState() {
     super.initState();
     if (widget.event != null) {
       _nameController.text = widget.event!.name;
-      _categoryController.text = widget.event!.category;
+      _selectedCategory = widget.event!.category;
       _statusController.text = widget.event!.status;
       _locationController.text = widget.event!.location;
       _selectedDate = widget.event!.date;
+    }
+    else{
+      _selectedCategory = 'Birthday';
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              key: Key('eventNameField'),
-              controller: _nameController,
-              decoration: InputDecoration(labelText: 'Event Name'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter an event name';
-                }
-                return null;
-              },
-            ),
-            TextFormField(
-              key: Key('eventCategoryField'),
-              controller: _categoryController,
-              decoration: InputDecoration(labelText: 'Category'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a category';
-                }
-                return null;
-              },
-            ),
-            DropdownButtonFormField<String>(
-              key: Key('eventStatusField'),
-              value: _statusController.text.isNotEmpty
-                  ? _statusController.text
-                  : null,
-              decoration: InputDecoration(labelText: 'Status'),
-              items: ['Upcoming', 'Current', 'past']
-                  .map((status) => DropdownMenuItem(
-                value: status,
-                child: Text(status),
-              ))
-                  .toList(),
-              onChanged: (value) {
-                _statusController.text = value!;
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please select a status';
-                }
-                return null;
-              },
-            ),
-            TextFormField(
-              key: Key('eventLocationField'),
-              controller: _locationController,
-              decoration: InputDecoration(labelText: 'Location'),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Please enter a location';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Text(
-                  _selectedDate != null
-                      ? 'Date: ${DateFormat.yMMMd().format(_selectedDate!)}'
-                      : 'No date selected',
-                  style: TextStyle(fontSize: 16),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                key: Key('eventNameField'),
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Event Name',
+                  errorText: nameError,
                 ),
-                Spacer(),
-                ElevatedButton(
-                  onPressed: () async {
-                    DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: _selectedDate ?? DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (pickedDate != null) {
-                      setState(() {
-                        _selectedDate = pickedDate;
-                      });
-                    }
-                  },
-                  child: Text('Select Date'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.deepPurple,
+                onChanged: _validateName,
+              ),
+              DropdownButtonFormField<String>(
+                key: Key('eventCategoryField'),
+                value: _selectedCategory,
+                decoration: InputDecoration(labelText: 'Category'),
+                items: ['Birthday', 'Wedding', 'Anniversary', 'Other']
+                    .map((category) => DropdownMenuItem(
+                  value: category,
+                  child: Text(category),
+                ))
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedCategory = value;
+                  });
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a category';
+                  }
+                  return null;
+                },
+              ),
+              DropdownButtonFormField<String>(
+                key: Key('eventStatusField'),
+                value: _statusController.text.isNotEmpty
+                    ? _statusController.text
+                    : null,
+                decoration: InputDecoration(labelText: 'Status'),
+                items: ['Upcoming', 'Current', 'Past']
+                    .map((status) => DropdownMenuItem(
+                  value: status,
+                  child: Text(status),
+                ))
+                    .toList(),
+                onChanged: (value) {
+                  _statusController.text = value!;
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a status';
+                  }
+                  return null;
+                },
+              ),
+              TextFormField(
+                key: Key('eventLocationField'),
+                controller: _locationController,
+                decoration: InputDecoration(
+                  labelText: 'Location',
+                  errorText: locationError,
+                ),
+                onChanged: _validateLocation,
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Text(
+                    _selectedDate != null
+                        ? 'Date: ${DateFormat.yMMMd().format(_selectedDate!)}'
+                        : 'No date selected',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  Spacer(),
+                  ElevatedButton(
+                    onPressed: () async {
+                      DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate ?? DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (pickedDate != null) {
+                        setState(() {
+                          _selectedDate = pickedDate;
+                        });
+                      }
+                    },
+                    child: Text('Select Date'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.deepPurple,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                child: Text(widget.event == null ? 'Add Event' : 'Save Changes'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: (nameError == null &&
+                      locationError == null &&
+                      _selectedDate != null &&
+                      _statusController.text.isNotEmpty &&
+                      _selectedCategory != null &&
+                      _nameController.text.isNotEmpty &&
+                      _locationController.text.isNotEmpty)
+                      ? Colors.deepPurple
+                      : Colors.grey, // Disabled button color
+                  foregroundColor: (nameError == null &&
+                      locationError == null &&
+                      _selectedDate != null &&
+                      _statusController.text.isNotEmpty &&
+                      _selectedCategory != null &&
+                      _nameController.text.isNotEmpty &&
+                      _locationController.text.isNotEmpty)
+                      ? Colors.white
+                      : Colors.black38, // Dimmed text color when disabled
+                  padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              child: Text(widget.event == null ? 'Add Event' : 'Save Changes'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.deepPurple,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                ),
-              ),
-              onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  final newEvent = Event(
-                    id: widget.event?.id,
-                    name: _nameController.text,
-                    category: _categoryController.text,
-                    status: _statusController.text,
-                    date: _selectedDate ?? DateTime.now(),
-                    location: _locationController.text,
-                    description: '',
-                  );
-                  widget.onSave(newEvent);
+                onPressed: (nameError == null &&
+                    locationError == null &&
+                    _selectedDate != null &&
+                    _statusController.text.isNotEmpty &&
+                    _selectedCategory != null &&
+                    _nameController.text.isNotEmpty &&
+                    _locationController.text.isNotEmpty)
+                    ? () {
+                  if (_formKey.currentState!.validate()) {
+                    final newEvent = Event(
+                      id: widget.event?.id,
+                      name: _nameController.text,
+                      category: _selectedCategory!,
+                      status: _statusController.text,
+                      date: _selectedDate!,
+                      location: _locationController.text,
+                      description: '',
+                    );
+                    widget.onSave(newEvent);
+                  }
                 }
-              },
-            ),
-          ],
+                    : () {
+                  String errorMessage = '';
+                  if (_selectedCategory == null || _selectedCategory!.isEmpty || _statusController.text.isEmpty
+                  || _selectedDate == null || _locationController.text.isEmpty || _nameController.text.isEmpty) {
+                    errorMessage += 'Please Fill all fields\n';
+                  }
+                  showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                    title: Text('Invalid Input'),
+                    content: Text(errorMessage.trim()),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: Text('OK'),
+                      ),
+                    ],
+                  ),
+                  );
+                },
+              )
+
+            ],
+          ),
         ),
       ),
     );
   }
 }
+
+
