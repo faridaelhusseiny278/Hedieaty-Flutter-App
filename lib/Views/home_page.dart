@@ -1,29 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/Controllers/event_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/friend_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/friend_event_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/gift_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/user_controller.dart';
+import 'package:hedieatyfinalproject/Models/user_model.dart';
 import 'rounded_button.dart';
 import 'friend_card.dart';
 import 'friends_event_list.dart';
 import 'createEvent.dart';
-import 'database.dart';
+import '../database.dart';
 import 'dart:async';
 import 'package:motion_tab_bar/MotionTabBarController.dart';
-import 'NotificationService.dart';
-import 'Notification.dart';
+import '../Controllers/NotificationService.dart';
+import '../Models/Notification.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'firebasedatabase_helper.dart';
+import '../Controllers/firebasedatabase_helper.dart';
 
-class Friend {
-  final String name;
-  final int eventCount;
-
-
-  Friend({required this.name, required this.eventCount});
-}
 
 class HomePage extends StatefulWidget {
   final int userid;
+  UserModel user_model = UserModel();
   DatabaseService dbService = DatabaseService();
-  // initialize _motionTabBarController
+  UserController userController = UserController();
+  FriendController friendController = FriendController();
+
+  EventController eventController = EventController();
+  GiftController giftController = GiftController();
+  FriendEventController friendEventController = FriendEventController();
+
   late MotionTabBarController motionTabBarController;
   bool testing;
 
@@ -46,6 +52,9 @@ class _HomePageState extends State<HomePage> {
   late AppNotificationService _notificationService;
   List<AppNotification> _notifications = [];
   StreamSubscription<DatabaseEvent>? _notificationsSubscription;
+  bool _isPressed = false;
+  Color _buttonColor = Colors.deepPurple;
+
 
 
 
@@ -139,11 +148,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _loadFriendsList() async {
-    var friendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
+    var friendsIds = await widget.friendController.getUserFriendsIDs(widget.userid);
 
     var friendsData = await Future.wait(friendsIds.map((id) async {
-      var friendData = await widget.dbService.getUserByIdforFriends(id);
-      var eventCount = await widget.dbService.getEventCountForUserFriends(
+      var friendData = await widget.user_model.getUserByIdforFriends(id);
+      var eventCount = await widget.eventController.getEventCountForUserFriends(
           friendData!['userid'].toString());
       return {
         'friend': friendData,
@@ -187,16 +196,20 @@ class _HomePageState extends State<HomePage> {
 
     for (var friend in friendsList) {
       // Ensure the user is a friend
-      bool isFriend = await widget.dbService.areFriends(widget.userid, friend['userid']);
+      // bool isFriend = await widget.userController.areFriends(widget.userid, friend['userid']);
 
       // Check if the friend's name matches the query
       bool matchesSearch = friend['name'].toLowerCase().contains(query.toLowerCase());
+      if (matchesSearch) {
+        filteredList.add(friend);
+        continue;
+      }
 
       // Check if any gift name in any event contains the search query
       bool hasMatchingGift = false;
-      var events = await widget.dbService.getEventsForUserFriends(friend['userid']);
+      var events = await widget.eventController.getEventsForUserFriends(friend['userid']);
       for (var event in events) {
-        var gifts = await widget.dbService.getGiftsForEventFriends(event['eventId'], friend['userid']);
+        var gifts = await widget.giftController.getGiftsForEventFriends(event['eventId'], friend['userid']);
         for (var gift in gifts) {
           if (gift['giftName'].toLowerCase().contains(query.toLowerCase())) {
             hasMatchingGift = true;
@@ -207,7 +220,7 @@ class _HomePageState extends State<HomePage> {
       }
 
       // Add the friend to the filtered list if they meet the criteria
-      if (isFriend && (matchesSearch || hasMatchingGift)) {
+      if ((matchesSearch || hasMatchingGift) && !filteredList.contains(friend)) {
         filteredList.add(friend);
       }
     }
@@ -315,7 +328,7 @@ class _HomePageState extends State<HomePage> {
     print("Attempting to add friend by phone number: $phoneNumber");
 
     // Retrieve potential friend by phone number
-    var potentialFriend = await widget.dbService.getUserByPhoneNumber(phoneNumber);
+    var potentialFriend = await widget.user_model.getUserByPhoneNumber(phoneNumber);
 
     if (potentialFriend == null) {
       print("User with phone number $phoneNumber not found in the database.");
@@ -326,7 +339,7 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    var currentFriendsIds = await widget.dbService.getUserFriendsIDs(widget.userid);
+    var currentFriendsIds = await widget.friendController.getUserFriendsIDs(widget.userid);
     print("current friend ids: $currentFriendsIds for user: ${widget.userid}");
 
     if (currentFriendsIds.contains(potentialFriend['userid'])) {
@@ -338,17 +351,17 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Add each other as friends in the database
-    await widget.dbService.addFriend(widget.userid, potentialFriend['userid']);
+    await widget.friendController.addFriend(widget.userid, potentialFriend['userid']);
 
      List<Map<String, dynamic>> tempList=[];
     // Refresh the friends list
-    var updatedFriendsListids = await widget.dbService.getUserFriendsIDs(widget.userid);
+    var updatedFriendsListids = await widget.friendController.getUserFriendsIDs(widget.userid);
     for (var friendid in updatedFriendsListids) {
-      var friendData = await widget.dbService.getUserByIdforFriends(friendid);
+      var friendData = await widget.user_model.getUserByIdforFriends(friendid);
       if (!tempList.contains(friendData)) {
         print("friendData: $friendData does not exist in TempList");
         tempList.add(friendData!);
-        eventCounts[friendData['userid']] = await widget.dbService.getEventCountForUserFriends(friendData['userid'].toString());
+        eventCounts[friendData['userid']] = await widget.eventController.getEventCountForUserFriends(friendData['userid'].toString());
       }
     }
     setState(() {
@@ -576,13 +589,26 @@ class _HomePageState extends State<HomePage> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                FriendsEventList(
-                                    frienddata: friend,
-                                    userid: widget.userid,
-                                    dbService: widget.dbService
-                                ),
+                          PageRouteBuilder(
+                            pageBuilder: (context, animation, secondaryAnimation) => FriendsEventList(
+                              frienddata: friend,
+                              userid: widget.userid,
+                              dbService: widget.dbService,
+                            ),
+                            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                              const begin = Offset(1.0, 0.0); // Slide in from the right
+                              const end = Offset.zero; // End at the current position
+                              const curve = Curves.easeInOut;
+
+                              var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                              var offsetAnimation = animation.drive(tween);
+
+                              return SlideTransition(
+                                position: offsetAnimation,
+                                child: child,
+                              );
+                            },
+                            transitionDuration: const Duration(milliseconds: 300), // Duration of the transition
                           ),
                         );
                       },
@@ -594,12 +620,30 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showAddFriendDialog(context); // Show the dialog to add a friend
-        },
-        child: Icon(Icons.add, size: 30),
-        backgroundColor: Colors.deepPurple,
+      floatingActionButton: AnimatedScale(
+        scale: _isPressed ? 0.5 : 1.0, // Scale down when pressed
+        duration: Duration(milliseconds: 350), // Duration of the animation
+        curve: Curves.easeInOut, // Animation curve
+        child: FloatingActionButton(
+          onPressed: () {
+            setState(() {
+              _isPressed = true; // Set to pressed state
+              _buttonColor = Colors.orange; // Change color when pressed
+            });
+
+            _showAddFriendDialog(context);
+
+            // Reset scale and color back after animation completes
+            Future.delayed(Duration(milliseconds: 350), () {
+              setState(() {
+                _isPressed = false; // Reset scale back to normal
+                _buttonColor = Colors.deepPurple; // Reset color to original
+              });
+            });
+          },
+          child: Icon(Icons.add, size: 30),
+          backgroundColor: _buttonColor, // Use the animated button color
+        ),
       ),
     );
   }

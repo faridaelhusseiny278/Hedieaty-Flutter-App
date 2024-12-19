@@ -7,8 +7,8 @@ import 'package:googleapis_auth/auth_io.dart' as auth;
 import 'package:googleapis/servicecontrol/v1.dart' as servicecontrol;
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'NotificationService.dart';
-import 'Notification.dart';
+import 'Controllers/NotificationService.dart';
+import 'Models/Notification.dart';
 import 'package:flutter/material.dart';
 
 Future <void> handleBackgroundMessage(RemoteMessage message) async {
@@ -85,71 +85,71 @@ class FirebaseApi {
   }
 
   sendNotification(String targetToken, BuildContext context, int userid) async {
-    final DatabaseReference dbRef =
-    FirebaseDatabase.instance.ref("Users/${userid.toString()}/events");
-
-    dbRef.onValue.listen((event) async {
-      final data = event.snapshot.value;
-      if (data != null) {
-        if (data is List) {
-          final List eventList = data as List;
-          for (var event in eventList) {
-            if (event == null) {
-              continue;
-            }
-            if (event['gifts'] == null) {
-              continue;
-            }
-            final List giftList = event['gifts'] as List;
-            for (var gift in giftList) {
-              if (gift == null) {
-                continue;
-              }
-              if (gift['pledged'] == true && gift['notificationSent'] == false) {
-                String message =
-                    '${gift['giftName']} has been pledged for the event ${event['eventName']}!';
-
-                // Add to your local notification service
-                await _notificationService.addNotification(AppNotification(
-                  message: message,
-                  timestamp: DateTime.now(),
-                ));
-
-                // Update database to avoid duplicate notifications
-                dbRef
-                    .child(eventList.indexOf(event).toString())
-                    .child('gifts')
-                    .child(giftList.indexOf(gift).toString())
-                    .update({'notificationSent': true});
-
-                // add a listener for pledged gifts here to send a notif when gifts are pledged
-                final accessToken = await getAccessToken();
-                final url = Uri.parse('https://fcm.googleapis.com/v1/projects/hediaty-e96fc/messages:send');
-                final response = await http.post(
-                  url,
-                  headers: <String, String>{
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer $accessToken',
-                  },
-                  body: jsonEncode({
-                    'message': {
-                      'token': targetToken,
-                      'notification': {'title': 'Gift Pledged', 'body': message},
-                    },
-                  }),
-                );
-                if (response.statusCode == 200) {
-                  print('Notification sent successfully');
-                } else {
-                  print('Failed to send notification. Error: ${response.body}');
-                }
-              }
-            }
-
-          }
-        }
-      }
-    });
+    // final DatabaseReference dbRef =
+    // FirebaseDatabase.instance.ref("Users/${userid.toString()}/events");
+    //
+    // dbRef.onValue.listen((event) async {
+    //   final data = event.snapshot.value;
+    //   if (data != null) {
+    //     if (data is List) {
+    //       final List eventList = data as List;
+    //       for (var event in eventList) {
+    //         if (event == null) {
+    //           continue;
+    //         }
+    //         if (event['gifts'] == null) {
+    //           continue;
+    //         }
+    //         final List giftList = event['gifts'] as List;
+    //         for (var gift in giftList) {
+    //           if (gift == null) {
+    //             continue;
+    //           }
+    //           if (gift['pledged'] == true && gift['notificationSent'] == false) {
+    //             String message =
+    //                 '${gift['giftName']} has been pledged for the event ${event['eventName']}!';
+    //
+    //             // Add to your local notification service
+    //             await _notificationService.addNotification(AppNotification(
+    //               message: message,
+    //               timestamp: DateTime.now(),
+    //             ));
+    //
+    //             // Update database to avoid duplicate notifications
+    //             dbRef
+    //                 .child(eventList.indexOf(event).toString())
+    //                 .child('gifts')
+    //                 .child(giftList.indexOf(gift).toString())
+    //                 .update({'notificationSent': true});
+    //
+    //             // add a listener for pledged gifts here to send a notif when gifts are pledged
+    //             final accessToken = await getAccessToken();
+    //             final url = Uri.parse('https://fcm.googleapis.com/v1/projects/hediaty-e96fc/messages:send');
+    //             final response = await http.post(
+    //               url,
+    //               headers: <String, String>{
+    //                 'Content-Type': 'application/json',
+    //                 'Authorization': 'Bearer $accessToken',
+    //               },
+    //               body: jsonEncode({
+    //                 'message': {
+    //                   'token': targetToken,
+    //                   'notification': {'title': 'Gift Pledged', 'body': message},
+    //                 },
+    //               }),
+    //             );
+    //             if (response.statusCode == 200) {
+    //               print('Notification sent successfully');
+    //             } else {
+    //               print('Failed to send notification. Error: ${response.body}');
+    //             }
+    //           }
+    //         }
+    //
+    //       }
+    //     }
+    //   }
+    // });
   }
 }
 

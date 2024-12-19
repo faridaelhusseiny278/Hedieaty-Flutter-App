@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/Controllers/event_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/gift_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/pledges_controller.dart';
+import 'package:hedieatyfinalproject/Models/gift_model.dart';
+import 'package:hedieatyfinalproject/Models/pledges_model.dart';
 // import 'package:hedieatyfinalproject/friends_gift_details.dart';
 import 'gift_details_page.dart';
-import 'database.dart';
+import '../database.dart';
 import 'gift_item.dart';
-import 'Event.dart';
+import '../Models/Event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
@@ -19,6 +24,10 @@ class GiftListPage extends StatefulWidget {
 class _GiftListPage extends State<GiftListPage> {
   List<Map<String, dynamic>> actions = [];
   DatabaseService dbService = DatabaseService();
+
+  GiftController giftController = GiftController();
+  PledgesController pledgeController = PledgesController();
+  EventController eventController = EventController();
   String selectedFilter = 'giftName'; // Default filter is gift name
   List<Map<String, dynamic>> filteredGifts = [];
   bool exists = false;
@@ -54,7 +63,7 @@ class _GiftListPage extends State<GiftListPage> {
         // Only process gifts related to the current event
         if (giftData['eventID'] == widget.eventid) {
           // Fetch gifts for event friends from Firebase
-          List<Map<String, dynamic>> giftsFirebase = await dbService.getGiftsForEventFriends(giftData['eventID'], widget.userid);
+          List<Map<String, dynamic>> giftsFirebase = await giftController.getGiftsForEventFriends(giftData['eventID'], widget.userid);
 
           // Create a mutable copy of the current gift map
           Map<String, dynamic> modifiableGift = Map<String, dynamic>.from(giftData);
@@ -69,7 +78,7 @@ class _GiftListPage extends State<GiftListPage> {
           }
 
           // Fetch the friend ID who pledged for the gift
-          var friendId = await dbService.getPledges(modifiableGift['giftid']);
+          var friendId = await pledgeController.getPledges(modifiableGift['giftid']);
           if (friendId != -1) {
             // Get the friend's name from the database by the friend ID
             List<Map> usersResponse = await dbService.readData("SELECT * FROM Users");
@@ -145,16 +154,16 @@ class _GiftListPage extends State<GiftListPage> {
       // Handle actions
       switch (action['action']) {
         case 'add':
-          await dbService.addGiftForUserinFirebase(gift, widget.userid, giftId);
+          await giftController.addGiftForUserinFirebase(gift, widget.userid, giftId);
           break;
 
         case 'update':
-          await dbService.updateGiftForUserinFirebase(gift, giftId, widget.userid);
+          await giftController.updateGiftForUserinFirebase(gift, giftId, widget.userid);
           break;
 
         case 'delete':
           print("Deleting gift: $gift");
-          await dbService.deleteGiftsForUserinFirebase(giftId, widget.userid, eventId);
+          await giftController.deleteGiftsForUserinFirebase(giftId, widget.userid, eventId);
           break;
 
         default:
@@ -175,7 +184,7 @@ class _GiftListPage extends State<GiftListPage> {
 
   /// Helper function to check if the event exists in Firebase and show an error dialog if not.
   Future<bool> _checkEventExistsAndHandleError(int eventId) async {
-    bool exists = await dbService.doesEventExistInFirebase(eventId, widget.userid);
+    bool exists = await eventController.doesEventExistInFirebase(eventId, widget.userid);
 
     if (!exists) {
       await showDialog(
@@ -333,7 +342,7 @@ class _GiftListPage extends State<GiftListPage> {
                       }
                       // remove the gift from the event's gifts in the database
                       Map<String, dynamic> giftToRemove = filteredGifts[index];
-                      await dbService.deleteGiftsForUser(giftToRemove['giftid'], widget.userid, widget.eventid);
+                      await giftController.deleteGiftsForUser(giftToRemove['giftid'], widget.userid, widget.eventid);
                       giftToRemove['eventID'] = widget.eventid;
                       actions.add({
                         'action': 'delete',
@@ -491,7 +500,7 @@ class _GiftListPage extends State<GiftListPage> {
                         // Check if the updated gift is not null
                         if (updatedGift != null) {
                           updatedGift['eventID'] = widget.eventid;
-                          int id = await dbService.addGiftForUser(updatedGift, widget.userid);
+                          int id = await giftController.addGiftForUser(updatedGift, widget.userid);
                           // Add the new or updated gift to the list
                           updatedGift['giftid'] = id;
                           print("updatedGift is $updatedGift");
@@ -567,7 +576,7 @@ class _GiftListPage extends State<GiftListPage> {
                           );
 
                           if (updatedGift != null) {
-                            await dbService.updateGiftForUser(updatedGift, gift['giftid'], widget.userid);
+                            await giftController.updateGiftForUser(updatedGift, gift['giftid'], widget.userid);
 
                             updatedGift['eventID'] = widget.eventid;
                             actions.add({

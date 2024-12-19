@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:hedieatyfinalproject/Controllers/user_controller.dart';
 import 'package:hedieatyfinalproject/database.dart';
 import 'login_screen.dart';
-
+import '../Models/user_model.dart';
+import '../Controllers/user_controller.dart';
 class SignupScreen extends StatefulWidget {
   @override
   _SignupScreenState createState() => _SignupScreenState();
@@ -12,7 +14,7 @@ class SignupScreen extends StatefulWidget {
 class _SignupScreenState extends State<SignupScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref("Users");
-  final DatabaseService _dbService = DatabaseService();
+  final UserController user_controller = UserController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
@@ -49,26 +51,30 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
 
-
   Future<void> _validateEmail(String email) async {
     DatabaseService dbService = DatabaseService();
     setState(() {
       emailError = null; // Reset error
     });
-    if (email.isEmpty) {
+
+    // Trim the email to remove leading/trailing spaces
+    String trimmedEmail = email.trim();
+
+    if (trimmedEmail.isEmpty) {
       setState(() {
         emailError = 'Email cannot be empty';
       });
-    } else if (!RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").hasMatch(email)) {
+    } else if (!RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").hasMatch(trimmedEmail)) {
       setState(() {
         emailError = 'Enter a valid email address';
       });
-    } else if (await dbService.checkEmail(email,null)) {
+    } else if (await user_controller.checkEmail(trimmedEmail, null)) {
       setState(() {
         emailError = 'Email already exists';
       });
     }
   }
+
   Future<void> _validatePhoneNumber(String phoneNumber) async {
     DatabaseService dbService = DatabaseService();
     setState(() {
@@ -82,7 +88,7 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() {
         phoneError = 'Enter a valid phone number starting with + and has 10-15 digits';
       });
-    } else if (await dbService.checkPhoneNumber(phoneNumber,null)) {
+    } else if (await user_controller.checkPhoneNumber(phoneNumber,null)) {
       setState(() {
         phoneError = 'Phone number already exists';
       });
@@ -140,7 +146,7 @@ class _SignupScreenState extends State<SignupScreen> {
         'imageurl': "assets/istockphoto-1296058958-612x612.jpg",
       });
 
-      await _dbService.addUser(newUserId, _nameController.text,
+      await user_controller.addUser(newUserId, _nameController.text,
           _emailController.text, _phoneController.text, _addressController.text, ["Push Notifications"]);
 
       Navigator.pushReplacement(

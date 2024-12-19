@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hedieatyfinalproject/home_page.dart'; // Import your HomePage widget
+import 'package:hedieatyfinalproject/Views/home_page.dart'; // Import your HomePage widget
 import 'package:mockito/mockito.dart';
 import 'package:hedieatyfinalproject/database.dart';
 import 'package:motion_tab_bar/MotionTabBarController.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hedieatyfinalproject/welcome_screen.dart';
-import 'package:hedieatyfinalproject/signup_screen.dart';
-import 'package:hedieatyfinalproject/login_screen.dart';
+import 'package:hedieatyfinalproject/Views/welcome_screen.dart';
+import 'package:hedieatyfinalproject/Views/signup_screen.dart';
+import 'package:hedieatyfinalproject/Views/login_screen.dart';
 import 'package:hedieatyfinalproject/main.dart';
 
 

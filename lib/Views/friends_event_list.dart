@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hedieatyfinalproject/database.dart';
 import 'package:intl/intl.dart';
-import 'friend_event.dart';
+import '../Models/friend_event.dart';
 import 'friends_gift_list.dart';
+import '../Models/Event.dart';
+import '../Controllers/friend_event_controller.dart';
 
 class FriendsEventList extends StatefulWidget {
   final Map<String, dynamic> frienddata;
@@ -22,6 +24,9 @@ class _FriendsEventListState extends State<FriendsEventList> {
   List<friendEvent> selectedEvents = [];
   late List<friendEvent> events;
 
+
+  FriendEventController friendEventController = FriendEventController();
+
   @override
   void initState() {
     super.initState();
@@ -29,7 +34,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
 
   }
   void _loadEvents() async{
-    await widget.dbService.getAllEventsForUserFriends(widget.frienddata['userid']).then((value) {
+    await friendEventController.getAllEventsForUserFriends(widget.frienddata['userid']).then((value) {
       setState(() {
         events = value;
         isLoading = false;

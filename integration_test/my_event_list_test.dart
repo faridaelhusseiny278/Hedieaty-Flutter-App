@@ -2,9 +2,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:mockito/mockito.dart';
 import 'package:hedieatyfinalproject/database.dart';
-import 'package:hedieatyfinalproject/event_list_page.dart';
-import 'package:hedieatyfinalproject/Event.dart';
-import 'package:hedieatyfinalproject/gift_list_page.dart';
+import 'package:hedieatyfinalproject/Views/event_list_page.dart';
+import 'package:hedieatyfinalproject/Models/Event.dart';
+import 'package:hedieatyfinalproject/Views/gift_list_page.dart';
 
 class MockDatabaseService extends Mock implements DatabaseService {
   @override

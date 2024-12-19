@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'signup_screen.dart';
+import 'package:hedieatyfinalproject/Views/signup_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   @override
@@ -10,7 +10,10 @@ class WelcomeScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24.0),
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFB3E5FC), Color(0xFF3A3A3A)],
+            colors: [
+              Color(0xFF87BED5), // Light blue, matching the background of the image
+              Color(0xFFCAEBF8),
+            ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -38,6 +41,15 @@ class WelcomeScreen extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 20),
+            Container(
+              height: 200,
+              width: 200,
+              child: Image.network(
+                'https://media.giphy.com/media/l3vRebb6HyeIgvmQ8/giphy.gif',
+                fit: BoxFit.cover,
+              ),
+            ),
             const SizedBox(height: 40),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -48,6 +60,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               onPressed: () {
+                // Navigate to Signup Screen
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => SignupScreen()),

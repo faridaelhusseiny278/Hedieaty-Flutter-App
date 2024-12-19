@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/Controllers/gift_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/pledges_controller.dart';
+import 'package:hedieatyfinalproject/Models/gift_model.dart';
+import 'package:hedieatyfinalproject/Models/pledges_model.dart';
 import 'package:hedieatyfinalproject/database.dart';
-import 'package:hedieatyfinalproject/friend_event.dart';
+import 'package:hedieatyfinalproject/Models/friend_event.dart';
 import 'friends_gift_item.dart';
 import 'friends_gift_details.dart';
 
@@ -25,13 +29,17 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
   String selectedCategory = "Tech"; // Default value
   bool isLoading = true;
 
+
+  GiftController giftController = GiftController();
+  PledgesController pledgesController = PledgesController();
+
   @override
   void initState() {
     super.initState();
     _loadGifts();
   }
   void _loadGifts() async {
-  final gifts = await widget.dbService.getGiftsForEventFriends((widget.event.id)!, widget.friendid);
+  final gifts = await giftController.getGiftsForEventFriends((widget.event.id)!, widget.friendid);
     setState(() {
       OriginalGifts = gifts;
       filteredGifts = OriginalGifts.map((gift) => Map<String, dynamic>.from(gift)).toList();
@@ -67,7 +75,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
   Future<Map<int, bool>> _fetchPledgeStatuses() async {
     final Map<int, bool> pledgeStatuses = {};
     for (var gift in filteredGifts) {
-      final isPledgedByCurrentUser = await widget.dbService.hasPledgedGift(
+      final isPledgedByCurrentUser = await pledgesController.hasPledgedGift(
         widget.userid,
         gift['giftid'],
       );
@@ -147,7 +155,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             return;
           }
           // Mark the gift as pledged in the database
-          await widget.dbService.updateGiftStatus(gift['giftid'], true, currentUserId, widget.friendid);
+          await giftController.updateGiftStatus(gift['giftid'], true, currentUserId, widget.friendid);
 
           // Update status in the state
           setState(() {
@@ -164,7 +172,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
           return;
         }
         // Check if the current user has pledged this gift
-        final hasPledged = await widget.dbService.hasPledgedGift(
+        final hasPledged = await pledgesController.hasPledgedGift(
           currentUserId,
           gift['giftid'],
         );
@@ -182,7 +190,7 @@ class _FriendsGiftListState extends State<FriendsGiftList> {
             return;
           }
           // Unpledge the gift in the database
-          await widget.dbService.updateGiftStatus(gift['giftid'], false,currentUserId, widget.friendid);
+          await giftController.updateGiftStatus(gift['giftid'], false,currentUserId, widget.friendid);
 
           // Update status in the state
           setState(() {

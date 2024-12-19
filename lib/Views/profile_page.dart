@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:hedieatyfinalproject/welcome_screen.dart';
+import 'package:hedieatyfinalproject/Controllers/event_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/gift_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/user_controller.dart';
+import 'package:hedieatyfinalproject/Models/gift_model.dart';
+import 'package:hedieatyfinalproject/Views/welcome_screen.dart';
 import 'my_pledged_gifts_page.dart';
-import 'database.dart';
+import '../database.dart';
+import '../Models/user_model.dart';
+import '../Models/Event.dart';
+import '../Models/friend_event.dart';
 class ProfilePage extends StatefulWidget {
   final int userid;
   DatabaseService dbService = DatabaseService();
@@ -18,6 +25,12 @@ class _ProfilePageState extends State<ProfilePage> {
   late TextEditingController phoneController;
   late TextEditingController addressController;
   late List<Map<String, dynamic>> events;
+
+  UserController user_controller = UserController();
+  EventController event_controller = EventController();
+  GiftController gift_controller = GiftController();
+
+
 
   String? nameError;
   String? emailError;
@@ -51,8 +64,8 @@ class _ProfilePageState extends State<ProfilePage> {
   }
   void _loadUserData() async {
     try {
-      final rawUser = await widget.dbService.getUserById(widget.userid);
-      final rawEvents = await widget.dbService.getEventsForUser(widget.userid);
+      final rawUser = await user_controller.getUserById(widget.userid);
+      final rawEvents = await event_controller.getEventsForUser(widget.userid);
 
 
       events = [];
@@ -60,7 +73,7 @@ class _ProfilePageState extends State<ProfilePage> {
       for (var rawEvent in rawEvents) {
         final modifiableEvent = Map<String, dynamic>.from(rawEvent);
 
-        final gifts = await widget.dbService.getGiftsForEvent(modifiableEvent['eventId']);
+        final gifts = await gift_controller.getGiftsForEvent(modifiableEvent['eventId']);
         modifiableEvent['gifts'] = gifts;
         events.add(modifiableEvent);
       }
@@ -129,7 +142,7 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         emailError = 'Enter a valid email address';
       });
-    } else if (await dbService.checkEmail(email, widget.userid)) {
+    } else if (await user_controller.checkEmail(email, widget.userid)) {
       setState(() {
         emailError = 'Email already exists';
       });
@@ -149,7 +162,7 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() {
         phoneError = 'Enter a valid phone number starting with + and has 10-15 digits';
       });
-    } else if (await dbService.checkPhoneNumber(phoneNumber, widget.userid)) {
+    } else if (await user_controller.checkPhoneNumber(phoneNumber, widget.userid)) {
       setState(() {
         phoneError = 'Phone number already exists';
       });
@@ -437,7 +450,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     try {
       // Save the updated user data to the database
-      await widget.dbService.updateUserData(widget.userid, user);
+      await user_controller.updateUserData(widget.userid, user);
       setState(() {
         print('Profile updated: $user');
       });

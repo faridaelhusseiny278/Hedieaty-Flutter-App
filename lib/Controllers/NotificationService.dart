@@ -1,5 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
-import 'Notification.dart';
+import '../Models/Notification.dart';
 import 'firebasedatabase_helper.dart';
 
 class AppNotificationService {

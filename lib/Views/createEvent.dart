@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'database.dart';
-import 'Event.dart';
+import 'package:hedieatyfinalproject/Controllers/event_controller.dart';
+import '../database.dart';
+import '../Models/Event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -16,6 +17,7 @@ class CreateEventPage extends StatefulWidget {
 
 class _CreateEventPageState extends State<CreateEventPage> {
   DatabaseService dbService = DatabaseService();
+  EventController eventController = EventController();
   List<Map<String, dynamic>> actions = [];
   final TextEditingController eventNameController = TextEditingController();
   final TextEditingController eventDateController = TextEditingController();
@@ -39,13 +41,14 @@ class _CreateEventPageState extends State<CreateEventPage> {
     setState(() {
       if (name.isEmpty) {
         nameError = 'Name cannot be empty';
-      } else if (!RegExp(r"^[a-zA-Z\s]{3,50}$").hasMatch(name)) {
-        nameError = 'Enter a valid name (3-50 alphabetic characters)';
+      } else if (!RegExp(r"^[a-zA-Z0-9\s'\-]{3,50}$").hasMatch(name)) {
+        nameError = 'Enter a valid name (3-50 characters, can include numbers, spaces, apostrophes, or dashes)';
       } else {
         nameError = null;
       }
     });
   }
+
   // validate event location
   void _validateLocation(String location) {
     setState(() {
@@ -94,7 +97,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
                       DateTime? pickedDate = await showDatePicker(
                         context: context,
                         initialDate: _selectedDate ?? DateTime.now(),
-                        firstDate: DateTime(2000),
+                        firstDate: DateTime.now(), // Disable selecting past dates (date before today)
                         lastDate: DateTime(2100),
                       );
                       if (pickedDate != null) {
@@ -114,7 +117,8 @@ class _CreateEventPageState extends State<CreateEventPage> {
                         borderRadius: BorderRadius.circular(15), // Rounded corners
                       ),
                     ),
-                  ),
+                  )
+
                 ],
               ),
               TextField(
@@ -219,7 +223,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
       status: status,
       description: '',
     );
-    int eventid= await dbService.addEventForUser(
+    int eventid= await eventController.addEventForUser(
       widget.userid,
       newEvent
     );

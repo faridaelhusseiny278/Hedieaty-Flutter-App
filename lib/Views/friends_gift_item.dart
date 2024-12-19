@@ -31,6 +31,7 @@ class FriendsGiftItem extends StatefulWidget {
 
 class _FriendsGiftItemState extends State<FriendsGiftItem> {
   bool _isValidImage = true; // Track if the image URL is valid
+  bool _isPressed = false; // Track if the button is pressed
 
   @override
   void initState() {
@@ -61,7 +62,6 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      // onLongPress: widget.onLongPress,
       onTap: widget.onPressed,
       child: Card(
         elevation: 6,
@@ -147,27 +147,62 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
                   ),
                 ),
 
-                // Pledge button
-                ElevatedButton(
-                  onPressed: () {
-                    print("Pledge button pressed, status: ${widget.status}");
+                // Pledge button with animation
+                GestureDetector(
+                  onTapDown: (_) {
+                    setState(() {
+                      _isPressed = true; // Set pressed state
+                    });
+                  },
+                  onTapUp: (_) {
+                    setState(() {
+                      _isPressed = false; // Reset pressed state
+                    });
+                    // Trigger your pledge change
                     widget.onPledgeChanged(!widget.status);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: widget.status ? Colors.green : Colors.white70, // Use backgroundColor
-                    foregroundColor: Colors.white, // Use foregroundColor
-                    elevation: 3,
-                    shadowColor: Colors.black26,
-                    shape: RoundedRectangleBorder(
+                  onTapCancel: () {
+                    setState(() {
+                      _isPressed = false; // Reset if the tap is canceled
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 500),
+                    curve: Curves.easeOut, // Animation curve
+                    transform: Matrix4.identity()..scale(_isPressed ? 1.1 : 1.0), // Scaling effect when pressed
+                    decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(25),
+                      color: widget.status ? Colors.green : Colors.white70,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black26.withOpacity(0.5),
+                          blurRadius: 8,
+                          offset: Offset(0, 4), // Shadow effect
+                        ),
+                      ],
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
-                  ),
-                  child: Text(
-                    (widget.status==1 || widget.status== true) ? 'Pledged' : 'Pledge',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        print("Pledge button pressed, status: ${widget.status}");
+                        widget.onPledgeChanged(!widget.status);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent, // Transparent to let the color change show
+                        foregroundColor: widget.status ? Colors.white : Colors.deepPurple,
+                        elevation: 0, // Remove extra elevation
+                        shadowColor: Colors.transparent, // Disable shadow for a cleaner effect
+                        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      child: Text(
+                        (widget.status == 1 || widget.status == true) ? 'Pledged' : 'Pledge',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -178,4 +213,5 @@ class _FriendsGiftItemState extends State<FriendsGiftItem> {
       ),
     );
   }
+
 }

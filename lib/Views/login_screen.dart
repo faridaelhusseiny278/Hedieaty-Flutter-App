@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'main.dart';
+import 'package:hedieatyfinalproject/Controllers/user_controller.dart';
+import '../main.dart';
 import 'signup_screen.dart';
-import 'database.dart';
+import '../database.dart';
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   bool testing;
@@ -18,24 +20,30 @@ class _LoginScreenState extends State<LoginScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
+  UserController userController = UserController();
   String? emailError;
 
 
   Future<void> _validateEmail(String email) async {
-    DatabaseService dbService = DatabaseService();
     setState(() {
       emailError = null; // Reset error
     });
-    if (email.isEmpty) {
+
+    // Trim the email to remove leading/trailing spaces
+    String trimmedEmail = email.trim();
+
+    if (trimmedEmail.isEmpty) {
       setState(() {
         emailError = 'Email cannot be empty';
       });
-    } else if (!RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").hasMatch(email)) {
+    } else if (!RegExp(r"^[^\s@]+@[^\s@]+\.[^\s@]+$").hasMatch(trimmedEmail)) {
       setState(() {
         emailError = 'Enter a valid email address';
       });
     }
   }
+
 
   Future<void> _login() async {
     try {
@@ -62,11 +70,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 (key) => users[key]['email'] == email,
             orElse: () => null,
           );
+          int userid = await userController.getUserIdByEmailFromFirebase(email!);
+          // call get user by id for friends
+          Map<String, dynamic>? user= await userController.getUserByIdforFriends(userid);
+
           if (userKey != null) {
+            print("now passing user map $user  to main screen");
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => MainScreen(userId: userKey, testing: widget.testing),
+                builder: (context) => MainScreen(userId: userKey, testing: widget.testing, user: user!),
               ),
             );
           }
@@ -74,10 +87,24 @@ class _LoginScreenState extends State<LoginScreen> {
           final users = snapshot.value as List;
           for (var user in users) {
             if (user != null && user['email'] == email) {
+              print("now passing user list $user  to main screen");
+              print("user type is ${user.runtimeType}");
+              // convert the user to map
+              final usermap = Map<String, dynamic>.from(
+                user.map(
+                      (key, value) => MapEntry(
+                    key.toString(), // Convert keys to String
+                    value,          // Keep values as dynamic
+                  ),
+                ),
+              );
+
+              print("now passing user map $usermap  to main screen");
+              print("now type of user map is ${usermap.runtimeType}");
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => MainScreen(userId: user['userid'], testing: widget.testing),
+                  builder: (context) => MainScreen(userId: user['userid'], testing: widget.testing, user: usermap!),
                 ),
               );
             }

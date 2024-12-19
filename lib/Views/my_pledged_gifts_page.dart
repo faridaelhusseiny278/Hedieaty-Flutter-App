@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/Controllers/gift_controller.dart';
+import 'package:hedieatyfinalproject/Controllers/pledges_controller.dart';
+import 'package:hedieatyfinalproject/Models/gift_model.dart';
+import 'package:hedieatyfinalproject/Models/pledges_model.dart';
 import 'package:intl/intl.dart';
-import 'database.dart';
+import '../database.dart';
 class PledgedListPage extends StatefulWidget {
   final int userid;
   DatabaseService dbService = DatabaseService();
@@ -13,6 +17,10 @@ class PledgedListPage extends StatefulWidget {
 class _PledgedListPageState extends State<PledgedListPage> {
   final DateFormat formatter = DateFormat('yyyy-MM-dd');
 
+
+  PledgesController  pledgesController = PledgesController();
+  GiftController giftController = GiftController();
+
   late List<Map<String, dynamic>> pledgedGifts; // List to store pledged gifts
   bool isLoading = true;
   @override
@@ -22,7 +30,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
   }
 
   Future<void> _loadPledgedGifts() async {
-    final results = await widget.dbService.getPledgedGiftsWithDetailsfromfirebase(widget.userid);
+    final results = await pledgesController.getPledgedGiftsWithDetailsfromfirebase(widget.userid);
     print("results are $results");
 
     setState(() {
@@ -156,7 +164,7 @@ class _PledgedListPageState extends State<PledgedListPage> {
                                                 print("gift to remove is $giftToRemove");
 
                                                 // Update the database
-                                                widget.dbService.updateGiftStatus(giftToRemove['giftid'], false,widget.userid, pledgedGifts[index]['friendId']);
+                                                giftController.updateGiftStatus(giftToRemove['giftid'], false,widget.userid, pledgedGifts[index]['friendId']);
                                                 pledgedGifts.removeAt(index);
                                               });
 
