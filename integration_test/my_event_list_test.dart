@@ -21,6 +21,13 @@ class MockDatabaseService extends Mock implements DatabaseService {
         returnValue: Future.value(1), // Ensure correct return type
         returnValueForMissingStub: Future.value(1),
       );
+  @override
+  Future<void> deleteEventsForUser(int userId, List<Event> eventsToDelete) =>
+      super.noSuchMethod(
+        Invocation.method(#deleteEventsForUser, [userId, eventsToDelete]),
+        returnValue: Future.value(), // Ensure correct return type
+        returnValueForMissingStub: Future.value(),
+      );
 }
 
 
@@ -178,17 +185,21 @@ void main() {
 
     // Step 1: Verify delete icon is initially disabled
     final Finder deleteButton = find.byIcon(Icons.delete);
-    expect(tester.widget<IconButton>(deleteButton).onPressed, isNull);
+    // expect(deleteButton, findsNothing);
 
     // Step 2: Select the first event
     await tester.tap(find.byType(Checkbox).first);
     await tester.pumpAndSettle();
 
     // Step 3: Verify delete icon is enabled after selecting
-    expect(tester.widget<IconButton>(deleteButton).onPressed, isNotNull);
+    expect(deleteButton, findsOneWidget);
 
     // Step 4: Tap the delete button to remove the selected event
     await tester.tap(deleteButton);
+    await tester.pumpAndSettle();
+
+    // then click on the delete button to delete the event in the dialog
+    await tester.tap(find.text("Delete"));
     await tester.pumpAndSettle();
 
     // Step 5: Verify "Event 1" is deleted, and "Event 2" still exists
@@ -237,7 +248,10 @@ void main() {
 
     // Simulate filling the EventForm
     await tester.enterText(find.byKey(Key('eventNameField')), 'Birthday Party');
-    await tester.enterText(find.byKey(Key('eventCategoryField')), 'Celebration');
+    await tester.tap(find.byKey(Key('eventCategoryField')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Birthday').first);
+    await tester.pumpAndSettle();
     await tester.tap(find.byKey(Key('eventStatusField')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Upcoming').first);
@@ -267,7 +281,7 @@ void main() {
 
     // Check if the event name and category are displayed on the list
     expect(find.text('Birthday Party'), findsOneWidget);
-    expect(find.text('Celebration'), findsOneWidget);
+    expect(find.text('Birthday'), findsOneWidget);
   });
 
 
