@@ -29,6 +29,20 @@ class _ProfilePageState extends State<ProfilePage> {
   late bool smsNotification ;
   bool isLoading = true;
   var imageurl;
+  List<String> imageOptions = [
+    'assets/free/3d-illustration-with-online-avatar_23-2151303043.jpg',
+    'assets/free/3d-illustration-with-online-avatar_23-2151303045.jpg',
+    'assets/free/3d-illustration-with-online-avatar_23-2151303053.jpg',
+    'assets/free/3d-illustration-with-online-avatar_23-2151303055.jpg',
+    'assets/free/3d-illustration-with-online-avatar_23-2151303080.jpg',
+    'assets/free/3d-illustration-with-online-avatar_23-2151303097.jpg',
+    'assets/free/3d-illustration-with-online-avatar_23-2151303093.jpg',
+    'assets/free/3d-rendering-hair-style-avatar-design_23-2151869121.jpg',
+    'assets/free/3d-rendering-hair-style-avatar-design_23-2151869153.jpg',
+    'assets/free/df5f5b1b174a2b4b6026cc6c8f9395c1.jpg',
+    'assets/free/young-man-with-glasses-avatar_1308-173760.jpg',
+    'assets/istockphoto-1296058958-612x612.jpg',
+  ];
 
   @override
   void initState() {
@@ -220,6 +234,41 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // add a drop down menu to select an image
+                    Text(
+                      "Change Your Avatar",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(width: 16), // Adds a small gap between the text and the dropdown
+                    DropdownButton<String>(
+                      value: imageurl,
+                      icon: const Icon(Icons.arrow_downward),
+                      iconSize: 24,
+                      elevation: 16,
+                      style: const TextStyle(color: Colors.deepPurple),
+                      underline: Container(
+                        height: 2,
+                        color: Colors.deepPurpleAccent,
+                      ),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          imageurl = newValue!;
+                        });
+                      },
+                      items: imageOptions.map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundImage: AssetImage(value),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+
                     TextField(
                       controller: nameController,
                       decoration: InputDecoration(
@@ -378,6 +427,7 @@ class _ProfilePageState extends State<ProfilePage> {
     user['email'] = emailController.text;
     user['phonenumber'] = phoneController.text;
     user['address'] = addressController.text;
+    user['imageurl'] = imageurl;
     List<String> preferences = [];
     print('pushNotification: $pushNotification');
     if (pushNotification) preferences.add('Push Notifications');

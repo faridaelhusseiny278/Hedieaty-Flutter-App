@@ -28,6 +28,12 @@ void main() async {
   // FirebaseDatabase.instance.goOffline();
   User? currentUser = FirebaseAuth.instance.currentUser;
   DatabaseService dbService = DatabaseService();
+  if (currentUser == null) {
+    runApp(MaterialApp(
+      home: WelcomeScreen(),
+    ));
+    return;
+  }
   int userid = await dbService.getUserIdByEmailFromFirebase((currentUser!.email)!);
   // call get user by id for friends
   Map<String, dynamic>? user= await dbService.getUserByIdforFriends(userid);
