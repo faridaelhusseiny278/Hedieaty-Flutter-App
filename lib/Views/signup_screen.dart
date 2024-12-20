@@ -117,9 +117,13 @@ class _SignupScreenState extends State<SignupScreen> {
     DataSnapshot snapshot = await _dbRef.get();
     if (snapshot.value != null) {
       if (snapshot.value is Map) {
+        print("Snapshot value is a Map");
         final users = Map<dynamic, dynamic>.from(snapshot.value as Map);
+        print("Users: $users");
         return users.keys.isEmpty ? 1 : users.keys.last + 1;
       } else if (snapshot.value is List) {
+        print("Snapshot value is a List");
+        print("Length: ${(snapshot.value as List).length}");
         return (snapshot.value as List).length;
       }
     }
@@ -129,10 +133,12 @@ class _SignupScreenState extends State<SignupScreen> {
   Future<void> _signup() async {
     try {
       final newUserId = await _getNewUserId();
+      print("New User ID: $newUserId");
       UserCredential user = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
+      print("User created: ${user.user!.uid}");
 
       await _dbRef.child(newUserId.toString()).set({
         'name': _nameController.text,

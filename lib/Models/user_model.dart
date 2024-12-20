@@ -12,17 +12,18 @@ class UserModel {
 
   Future<int> addUser(int userId, String name, String email,
       String phonenumber, String address,
-      List<String> notification_preferences) async {
+      List<String> notification_preferences,String imageurl) async {
     final myData = await dbService.db;
     int id = await myData.rawInsert(
-        "INSERT INTO Users (userid, name, email, phonenumber, address, notification_preferences) VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO Users (userid, name, email, phonenumber, address, notification_preferences,imageurl) VALUES (?, ?, ?, ?, ?, ?,?)",
         [
           userId,
           name,
           email,
           phonenumber,
           address,
-          notification_preferences.join(",")
+          notification_preferences.join(","),
+          imageurl
         ]);
     return id;
   }

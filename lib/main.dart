@@ -39,7 +39,7 @@ void main() async {
   Map<String, dynamic>? user= await userController.getUserByIdforFriends(userid);
 
 
-  await FirebaseApi().initNotifications();
+  // await FirebaseApi().initNotifications();
 
   debugPaintSizeEnabled = false;
   runApp(MyApp(isLoggedIn: currentUser != null
