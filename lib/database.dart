@@ -16,6 +16,7 @@ class DatabaseService {
   Database? _database;
 
   Future<Database> get db async {
+    print("now calling get db");
     _database ??= await init();
     return _database!;
   }
@@ -127,7 +128,7 @@ class DatabaseService {
           continue;
         }
 
-
+        print("user to be inserted is $user");
         int user_id = await myData.rawInsert('''
         INSERT INTO Users (userid, name, phonenumber, email, address, notification_preferences, imageurl)
         VALUES (${user['userid']}, '${user['name']}', '${user['phonenumber']}', '${user['email']}', '${user['address']}', '${user['notification_preferences']
@@ -464,7 +465,6 @@ class DatabaseService {
   }
 
 
-
   Future<void> printDatabase() async {
     final db = await openDatabase('hedeaty.db');
     // Replace 'tableName' with the name of the table you want to print
@@ -483,14 +483,5 @@ class DatabaseService {
   }
 
 
-
-
-
-
-
-
-
-
-
-
 }
+

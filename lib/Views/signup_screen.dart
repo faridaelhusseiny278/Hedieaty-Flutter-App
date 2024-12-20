@@ -141,13 +141,14 @@ class _SignupScreenState extends State<SignupScreen> {
         'address': _addressController.text,
         'userid': newUserId,
         "notification_preferences": ["Push Notifications"],
-        'events': [],
-        'friends': [],
         'imageurl': "assets/istockphoto-1296058958-612x612.jpg",
+        'events': [],
+        'friends': []
+
       });
 
       await user_controller.addUser(newUserId, _nameController.text,
-          _emailController.text, _phoneController.text, _addressController.text, ["Push Notifications"]);
+          _emailController.text, _phoneController.text, _addressController.text, ["Push Notifications"], "assets/istockphoto-1296058958-612x612.jpg");
 
       Navigator.pushReplacement(
         context,

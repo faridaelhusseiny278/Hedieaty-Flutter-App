@@ -105,8 +105,8 @@ Future<bool> areFriends(int currentUserId, int friendId) async {
     }
     return false;
   }
-  Future<int> addUser(int userId, String name, String email, String phonenumber, String address, List<String> notification_preferences) async {
-  return await userModel.addUser(userId, name, email, phonenumber, address, notification_preferences);
+  Future<int> addUser(int userId, String name, String email, String phonenumber, String address, List<String> notification_preferences, String imageurl) async {
+  return await userModel.addUser(userId, name, email, phonenumber, address, notification_preferences,imageurl);
   }
   Future<Map<String, dynamic>?> getUserByIdforFriends(int userId) async {
     return await userModel.getUserByIdforFriends(userId);

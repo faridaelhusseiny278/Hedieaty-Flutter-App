@@ -372,54 +372,22 @@ class Event {
 
     return result.first;
   }
-Future <void> UpdateEventStatusBasedOnTodaysDate(int userid, int eventid) async {
+  Future <void> UpdateEventStatusBasedOnTodaysDate(int userid, int eventid) async {
     print("Updating event status based on today's date for event $eventid");
-  UpdateEventStatusBasedOnTodaysDateinDatabase(userid, eventid);
-  final dbRef = FirebaseDatabaseHelper.getReference("Users/$userid/events");
-  final DataSnapshot snapshot = await dbRef.get();
-  if (snapshot.exists) {
-    if (snapshot.value is Map) {
-      final eventsMap = Map<String, dynamic>.from(snapshot.value as Map);
-      eventsMap.forEach((key, value) {
-        if (value['eventId'] == eventid) {
-          DateTime eventDate = DateTime.parse(value['eventDate']);
-          print("event date is $eventDate");
-          if (DateTime.now().isAfter(eventDate)) {
-            print("event is past");
-            dbRef.child(key).update({'Status': 'past'});
-          }
-          else if (DateTime
-              .now()
-              .day == eventDate.day &&
-              DateTime
-                  .now()
-                  .month == eventDate.month &&
-              DateTime
-                  .now()
-                  .year == eventDate.year) {
-            print("event is current");
-            dbRef.child(key).update({'Status': 'Current'});
-          }
-          else {
-            print("event is upcoming");
-            dbRef.child(key).update({'Status': 'Upcoming'});
-          }
-        }
-      });
-    } else if (snapshot.value is List) {
-      final rawEvents = snapshot.value as List;
-      for (var eventData in rawEvents) {
-        if (eventData is Map) {
-          if (eventData['eventId'] == eventid) {
-            DateTime eventDate = DateTime.parse(eventData['eventDate']);
+    UpdateEventStatusBasedOnTodaysDateinDatabase(userid, eventid);
+    final dbRef = FirebaseDatabaseHelper.getReference("Users/$userid/events");
+    final DataSnapshot snapshot = await dbRef.get();
+    if (snapshot.exists) {
+      if (snapshot.value is Map) {
+        final eventsMap = Map<String, dynamic>.from(snapshot.value as Map);
+        eventsMap.forEach((key, value) {
+          if (value['eventId'] == eventid) {
+            DateTime eventDate = DateTime.parse(value['eventDate']);
             print("event date is $eventDate");
             if (DateTime.now().isAfter(eventDate)) {
               print("event is past");
-              dbRef.child(rawEvents.indexOf(eventData).toString())
-                  .update({'Status': 'past'});
+              dbRef.child(key).update({'Status': 'past'});
             }
-            //   then check if today is the same date of the event date (date only not time)
-            //   if so update the status to current
             else if (DateTime
                 .now()
                 .day == eventDate.day &&
@@ -430,56 +398,88 @@ Future <void> UpdateEventStatusBasedOnTodaysDate(int userid, int eventid) async 
                     .now()
                     .year == eventDate.year) {
               print("event is current");
-              dbRef.child(rawEvents.indexOf(eventData).toString())
-                  .update({'Status': 'current'});
+              dbRef.child(key).update({'Status': 'Current'});
             }
             else {
               print("event is upcoming");
-              dbRef.child(rawEvents.indexOf(eventData).toString())
-                  .update({'Status': 'upcoming'});
+              dbRef.child(key).update({'Status': 'Upcoming'});
+            }
+          }
+        });
+      } else if (snapshot.value is List) {
+        final rawEvents = snapshot.value as List;
+        for (var eventData in rawEvents) {
+          if (eventData is Map) {
+            if (eventData['eventId'] == eventid) {
+              DateTime eventDate = DateTime.parse(eventData['eventDate']);
+              print("event date is $eventDate");
+              if (DateTime.now().isAfter(eventDate)) {
+                print("event is past");
+                dbRef.child(rawEvents.indexOf(eventData).toString())
+                    .update({'Status': 'past'});
+              }
+              //   then check if today is the same date of the event date (date only not time)
+              //   if so update the status to current
+              else if (DateTime
+                  .now()
+                  .day == eventDate.day &&
+                  DateTime
+                      .now()
+                      .month == eventDate.month &&
+                  DateTime
+                      .now()
+                      .year == eventDate.year) {
+                print("event is current");
+                dbRef.child(rawEvents.indexOf(eventData).toString())
+                    .update({'Status': 'current'});
+              }
+              else {
+                print("event is upcoming");
+                dbRef.child(rawEvents.indexOf(eventData).toString())
+                    .update({'Status': 'upcoming'});
+              }
             }
           }
         }
+      } else {
+        print("Unexpected data format: ${snapshot.value}");
       }
     } else {
-      print("Unexpected data format: ${snapshot.value}");
+      print("No events found for user $userid.");
     }
-  } else {
-    print("No events found for user $userid.");
   }
-}
   Future <void> UpdateEventStatusBasedOnTodaysDateinDatabase(int userid, int eventid) async{
-  //   update event status based on todays date in database (sqlite)
-  final myData = await dbService.db;
-  var result = await myData.rawQuery(
-      'SELECT * FROM Events WHERE userID = $userid and eventId = $eventid');
-  if (result.isNotEmpty) {
-    final event = Event.fromMap(result.first);
-    if (DateTime.now().isAfter(event.date)) {
-      await myData.rawUpdate(
-          'UPDATE Events SET Status = ? WHERE userID = ? and eventId = ?',
-          ['past', userid, eventid]);
-    }
-    else if (DateTime.now().day == event.date.day &&
-        DateTime.now().month == event.date.month &&
-        DateTime.now().year == event.date.year) {
-      await myData.rawUpdate(
-          'UPDATE Events SET Status = ? WHERE userID = ? and eventId = ?',
-          ['Current', userid, eventid]);
+    //   update event status based on todays date in database (sqlite)
+    final myData = await dbService.db;
+    var result = await myData.rawQuery(
+        'SELECT * FROM Events WHERE userID = $userid and eventId = $eventid');
+    if (result.isNotEmpty) {
+      final event = Event.fromMap(result.first);
+      if (DateTime.now().isAfter(event.date)) {
+        await myData.rawUpdate(
+            'UPDATE Events SET Status = ? WHERE userID = ? and eventId = ?',
+            ['past', userid, eventid]);
+      }
+      else if (DateTime.now().day == event.date.day &&
+          DateTime.now().month == event.date.month &&
+          DateTime.now().year == event.date.year) {
+        await myData.rawUpdate(
+            'UPDATE Events SET Status = ? WHERE userID = ? and eventId = ?',
+            ['Current', userid, eventid]);
+      }
+      else {
+        await myData.rawUpdate(
+            'UPDATE Events SET Status = ? WHERE userID = ? and eventId = ?',
+            ['Upcoming', userid, eventid]);
+      }
     }
     else {
-      await myData.rawUpdate(
-          'UPDATE Events SET Status = ? WHERE userID = ? and eventId = ?',
-          ['Upcoming', userid, eventid]);
+      print("No events found for user $userid.");
     }
-  }
-  else {
-    print("No events found for user $userid.");
-  }
 
   }
   Future <void> initializeEvents() async{
-  //   get events from firebase and update their statuses
+    //   get events from firebase and update their statuses
     final dbRef = FirebaseDatabaseHelper.getReference("Users");
     final DataSnapshot snapshot = await dbRef.get();
     if (snapshot.exists) {

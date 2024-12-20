@@ -65,6 +65,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _loadUserData() async {
     try {
       final rawUser = await user_controller.getUserById(widget.userid);
+      print("raw user is $rawUser");
       final rawEvents = await event_controller.getEventsForUser(widget.userid);
 
 
@@ -83,6 +84,7 @@ class _ProfilePageState extends State<ProfilePage> {
         this.user = Map<String, dynamic>.from(rawUser!);
         this.events = events;
         imageurl = rawUser['imageurl'];
+
         nameController = TextEditingController(text: user['name']);
         emailController = TextEditingController(text: user['email']);
         phoneController = TextEditingController(text: user['phonenumber']);
