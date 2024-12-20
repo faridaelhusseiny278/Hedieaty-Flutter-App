@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hedieatyfinalproject/Controllers/event_controller.dart';
 import 'package:hedieatyfinalproject/Controllers/user_controller.dart';
 import 'package:hedieatyfinalproject/Views/welcome_screen.dart';
 import 'package:motion_tab_bar/MotionTabBarController.dart';
@@ -15,13 +16,14 @@ import 'Controllers/NotificationService.dart';
 import 'firebase_api.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'Controllers/firebasedatabase_helper.dart';
-import '../Models/user_model.dart';
 void main() async {
   print("Starting app");
+
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
 
   await FirebaseDatabaseHelper.initializeDatabase();
+
   // FirebaseDatabase.instance.goOffline();
   User? currentUser = FirebaseAuth.instance.currentUser;
   DatabaseService dbService = DatabaseService();
@@ -91,6 +93,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    print("initializing main screen");
+    _initializeEvents();
     // _syncDatabaseWithFirebase();
     _startFirebaseListener();
     _motionTabBarController = MotionTabBarController(
@@ -107,6 +111,12 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     _getUserNotificationPreferences();
 
   }
+  Future <void> _initializeEvents() async {
+    print("initializing events");
+    EventController eventController = EventController();
+    await eventController.initializeEvents();
+  }
+
   Future<void> _getUserNotificationPreferences() async
   {
     UserController userController = UserController();

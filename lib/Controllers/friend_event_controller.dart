@@ -17,4 +17,5 @@ class FriendEventController{
     return await friendEventModel.getAllEventsForUserFriends(userId);
   }
 
+
 }

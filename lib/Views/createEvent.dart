@@ -146,7 +146,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
               DropdownButtonFormField<String>(
                 value: status,
                 decoration: InputDecoration(labelText: 'Status'),
-                items: ['Current', 'Upcoming', 'Past']
+                items: ['Current', 'Upcoming', 'past']
                     .map((status) => DropdownMenuItem(
                   value: status,
                   child: Text(status),

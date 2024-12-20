@@ -64,6 +64,7 @@ class _HomePageState extends State<HomePage> {
     print("in init state of home page now!");
     super.initState();
     _loadFriendsList();
+    // _initializeEvents();
     if (widget.testing == false){
       _requestNotificationPermissions();
       _notificationService = AppNotificationService(userid: widget.userid);
@@ -78,6 +79,8 @@ class _HomePageState extends State<HomePage> {
 
     });
   }
+
+
   void _requestNotificationPermissions() async {
     FirebaseMessaging messaging = FirebaseMessaging.instance;
 

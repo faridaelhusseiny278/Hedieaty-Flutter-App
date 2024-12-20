@@ -118,4 +118,14 @@ class EventController{
   Future<Map<String, dynamic>> getEventByGiftId(int giftId) async {
     return await event_model.getEventByGiftId(giftId);
   }
+
+  Future <void> UpdateEventStatusBasedOnTodaysDate(int userid, int eventid) async {
+    return await event_model.UpdateEventStatusBasedOnTodaysDate(userid, eventid);
+  }
+  Future <void> UpdateEventStatusBasedOnTodaysDateinDatabase(int userid, int eventid) async {
+    return await event_model.UpdateEventStatusBasedOnTodaysDateinDatabase(userid, eventid);
+  }
+  Future <void> initializeEvents() async {
+    return await event_model.initializeEvents();
+  }
 }

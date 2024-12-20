@@ -5,6 +5,7 @@ import '../Models/friend_event.dart';
 import 'friends_gift_list.dart';
 import '../Models/Event.dart';
 import '../Controllers/friend_event_controller.dart';
+import '../Controllers/event_controller.dart';
 
 class FriendsEventList extends StatefulWidget {
   final Map<String, dynamic> frienddata;
@@ -26,6 +27,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
 
 
   FriendEventController friendEventController = FriendEventController();
+  EventController eventController = EventController();
 
   @override
   void initState() {
@@ -33,14 +35,31 @@ class _FriendsEventListState extends State<FriendsEventList> {
     _loadEvents();
 
   }
-  void _loadEvents() async{
-    await friendEventController.getAllEventsForUserFriends(widget.frienddata['userid']).then((value) {
+  void _loadEvents() async {
+    try {
+      final userId = widget.frienddata['userid'];
+      final eventList = await friendEventController.getAllEventsForUserFriends(userId);
+
+      // Using a for loop to process the events (if needed)
+      List<friendEvent> eventsLoaded = [];
+      for (var event in eventList) {
+        eventsLoaded.add(event);
+      }
+
+      // Update state
       setState(() {
-        events = value;
+        events = eventsLoaded;
         isLoading = false;
       });
-    });
+    } catch (e) {
+      // Handle potential errors
+      print("Error loading events: $e");
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
+
 
   void _toggleSelectAll(bool value) {
     setState(() {
@@ -196,6 +215,7 @@ class _FriendsEventListState extends State<FriendsEventList> {
                     SizedBox(width: 8),
                     Flexible(  // Ensure text can flex if too long
                       child: Text(
+                        // set the event status based on todays date
                         event.status,
                         style: TextStyle(
                           fontSize: 14,
