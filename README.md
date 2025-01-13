@@ -1,16 +1,3 @@
 # hedieatyfinalproject
 
-A new Flutter project.
-
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Amazon Store: https://www.amazon.com/Ain-Shams-University-Hedieaty-Management/dp/B0CW18Q8Y2/ref=sr_1_8?crid=YVI3CV85M4QV&dib=eyJ2IjoiMSJ9.0VSODAKgqZ27hdh82CTDfZcn3DRiXJiAa4DG2tPqzaiUnE_lqe0VHZ5AsWMQTbDZfLlOwpCv5Sepk1TLlFAp85VYcPANSrNaH8_ykjU5gURWteTSt06CFXjj9y5mKccjYLqoqF9oXgS0Ap_joE2GoYLcU3AovKFCQrpeTB9o8uxMhNm1Zv_ejawiS40W6LGbtmEE4Gvx7yB50fhRSEaZo9-UXRfSb0n1qinOrRV_a8Qex5VLJV29ZoyESbEFNHiHY0wxe0TF7_PKpQh9jOnwRg8AXMsA7LuIuXngNGbzUBKOaj1wAFOX3dAL1Z69p7_qfl0-JfA9TnwpOsW2eTYpjla_Xu26epDfoYI6m7yW1FJDJKeaHo8vj7iHGkaiVSJc5BETM4yjdm5BWomuWZsIVmd43wW6t1I8h3r6V8qtoK1oF7H48ywJOXmSA3YwHO_v.V3CLbfuXJ0LxPcnf3wOyLNX90os7eusYXI5ECKPwTbE&dib_tag=se&keywords=hedieaty+app&qid=1736777059&sprefix=hedieaty+ap%2Caps%2C265&sr=8-8
